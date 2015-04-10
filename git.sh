@@ -38,6 +38,8 @@ git fetch origin  ===> git merge origin/master ==> git push origin master       
 
 git log --no-merges origin/master ^issue54 //查看issue54本地分支与当前最新的仓库代码的区别
 
+git log --abbrev-commit --pretty=oneline
+
 
 git fetch origin ==> git log --no-merges origin/master ^issue54 ==> git checkout master ==> git merge issue54 ==> git merge origin/master ==> git push origin master   //完整的更新代码的流程
 
@@ -87,6 +89,25 @@ git config --global core.whitespace \ trailing-space,space-before-tab,indent-wit
 
 
 
+No.1 git fetch liming==>git merage liming/master
+No.2 git checkout liming/card
++
+No.3 git remote add liming /home/liming/repo ==>git remote -v
+
+No.5 git branch --remote
+
+No.6 git pull origin <branch_name> 
+
+No.7 git log --grep='_x_nova' --pretty=oneline
+
+
+No.8 git rebase -i HEAD~3 ==> edit ==>git commit-amend ==>git rebase --continue
+
+No.9 
+git reset --hard HEAD
+git clean -f -d
+git pull
+ 
 
 
 
