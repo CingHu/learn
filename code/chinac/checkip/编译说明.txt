@@ -1,0 +1,27 @@
+checkip 程序编译说明
+
+checkip 程序编译说明
+
+● 准备编译环境
+
+CentOS 下
+
+    yum -y install make gcc pkgconfig
+    yum -y install openssl-devel libxml2-devel
+
+Ubuntu 下
+
+    apt-get -y install make gcc pkg-config
+    apt-get -y install libssl-dev libxml2-dev
+    
+OpenSUSE 下
+
+    yast --install gcc make pkgconfig
+    yast --install libopenssl-devel libxml2-devel libxml2 openssl
+    
+● 编译程序
+
+进入源代码目录下，运行 make，得到 checkip 文件，此即程序的可执行文件。
+    
+    
+    

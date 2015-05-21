@@ -15,7 +15,7 @@ git fetch origin                         //将得到一个新的远程分支 ori
 
 git merge origin/serverfix               //把内容合并到当前分支，这个分支是一个远程分支
 
-git checkout -b serverfix origin/serverfix  //创建一个自己的serverfix开发
+git checkout -b serverfix origin/serverfix --track  //创建一个自己的serverfix开发
 
 git checkout --track origin/serverfix    //跟踪远程分支
 
@@ -89,16 +89,24 @@ git config --global core.whitespace \ trailing-space,space-before-tab,indent-wit
 
 
 
-No.1 git fetch liming==>git merage liming/master
-No.2 git checkout liming/card
-+
-No.3 git remote add liming /home/liming/repo ==>git remote -v
+No.1 
+git fetch liming==>git merage liming/master 
 
-No.5 git branch --remote
+No.2 
+git checkout liming/card 
 
-No.6 git pull origin <branch_name> 
+No.3 
+git remote add liming /home/liming/repo ==>git remote -v
 
-No.7 git log --grep='_x_nova' --pretty=oneline
+No.5 
+git branch --remote
+
+No.6
+git pull origin <branch_name> 
+git pull --rebase origin master
+
+No.7 
+git log --grep='_x_nova' --pretty=oneline
 
 
 No.8 git rebase -i HEAD~3 ==> edit ==>git commit-amend ==>git rebase --continue
@@ -108,15 +116,19 @@ git reset --hard HEAD
 git clean -f -d
 git pull
  
+No.10
+git log --decorate --oneline --graph
+
+No.11
+git log -p  #显示详细信息
 
 
+No.12
+git checkout HEAD^  file
+git checkout 1.1.0
 
-
-
-
-
-
-
+No.13 
+git pull --rebase origin master
 
 
 
