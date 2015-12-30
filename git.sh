@@ -18,6 +18,7 @@ git merge origin/serverfix               //把内容合并到当前分支，这�
 git checkout -b serverfix origin/serverfix --track  //创建一个自己的serverfix开发
 
 git checkout --track origin/serverfix    //跟踪远程分支
+git branch --set-upstream servicevm origin/servicevm
 
 git checkout -b sf origin/serverfix      //现在你的本地分支 sf 会自动向 origin/serverfix 推送和抓取数据了
 
@@ -131,6 +132,38 @@ No.13
 git pull --rebase origin master
 
 
+No.14
+是查看目前的每一行是哪个提交最后改动的
+git blame filename
 
+No.15 强制同步
+git reset --hard origin/master
 
+No.16 修改commit中的user, mail
+git commit --amend --author=huxining
 
+No.17 搜索文件修改历史
+git log --pretty=oneline file
+
+No.18 没有commit-msg
+LANG=C LANGUAGE=C git review -s
+
+No.19 比较暂存区与仓库的差别
+git diff --cached
+git diff --staged
+
+No.20 移除跟踪但是不删除
+git rm --cached readme.txt
+
+No.21 删除文件
+git rm readme.txt
+git rm -f readme.txt
+
+No.22 查看日志
+git log -p -2
+git log --stat
+git log --pretty=online --graph
+git log --format="%h %s" --graph
+
+No.23 恢复到仓库版本
+git checkout -- benchmarks.rb
