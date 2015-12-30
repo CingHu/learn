@@ -108,6 +108,7 @@ git pull --rebase origin master
 
 No.7 
 git log --grep='_x_nova' --pretty=oneline
+git log -g master
 
 
 No.8 git rebase -i HEAD~3 ==> edit ==>git commit-amend ==>git rebase --continue
@@ -165,5 +166,83 @@ git log --stat
 git log --pretty=online --graph
 git log --format="%h %s" --graph
 
+git log --abbrev-commit --pretty=oneline -n
+
 No.23 恢复到仓库版本
 git checkout -- benchmarks.rb
+
+No.24 远端仓库信息
+git remote show origin
+
+No.25 删除远端分支pa
+git remote rm pa
+
+No.26 push tag
+git push origin v1.5
+
+No.27 push所有tag
+git push origin --tags
+
+No.28 
+git branch --merged
+git branch -v
+git branch --no-merged
+
+No.29 跟踪远程分支
+git checkout --track origin/serverfix
+
+No.30 删除远程分支
+git push origin :serverfix
+
+No.31 rebase
+git checkout experiment
+git rebase master
+git rebase origin/master
+
+No.32 把基于 server 分支而非 master 分支的改变（即 C8 和 C9），跳过 server 直接放到master 分支中重演一遍
+git rebase --onto master server client
+
+No.33 先取出特性分支server，然后在主分支 master ==>  git rebase [主分支] [特性分支]
+git rebase master server
+git checkout master
+git merge server
+
+No.34 显示多余的空白字符
+git diff --check
+
+No.35 merge最新的代码到本地
+git merge origin/master
+
+No.36 查看当前分支与master的区别
+git log --no-merges origin/master ^issue54
+git log  origin/master ^issue54
+
+No.37  reflog
+git show HEAD@{5}
+git show HEAD~3
+git show HEAD^^^
+git log origin/master..HEAD
+git log refB --not refA
+git log ^refA refB
+git log refA..refB
+
+No.38 修改历史提交
+git rebase -i HEAD~3
+git commit --amend
+git rebase --continue
+
+No.40 配置git
+commit.template
+core.pager
+help.autocorrect
+core.excludesfile
+color.ui(true, always, false)
+color.branch color.diff color.interactive color.status
+merge.tool
+core.autocrlf(true, input, false)
+trailing-space, space-before-tab, indent-with-non-tab, cr-at-eol
+
+
+
+
+
