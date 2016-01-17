@@ -25,7 +25,7 @@ git checkout -b sf origin/serverfix      //现在你的本地分支 sf 会自动
 git push origin :serverfix               //删除远程分支
 
 
-git checkout experiment ===>  git rebase master 
+git checkout experiment ===>  git rebase master
 
 git rebase --onto master server client ===> git checkout master ==> git merge client ==>  git rebase master server ==> git checkout master ==> git merge server ==> git branch -d client ==> git branch -d server  //我们就可以把基于 server 分支而非 master 分支的改变（即 C8 和 C9），跳过 server 直接放到master 分支中重演一遍，但这需要用 git rebase 的 –onto 选项指定新的基底分支master
 
@@ -242,6 +242,7 @@ merge.tool
 core.autocrlf(true, input, false)
 trailing-space, space-before-tab, indent-with-non-tab, cr-at-eol
 
+generate a confict
 
 
 
