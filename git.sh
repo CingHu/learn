@@ -36,10 +36,14 @@ git log --no-merges                  //还没有merge的分支
 
 git fetch origin  ===> git merge origin/master ==> git push origin master       //提交之前需要fetch仓库里最新的代码,同时将代码合并到最新,然后在push代码
 
+git fetch origin master -v ==> git reset --hard origin/master //与远端代码保持一致
+git reset --hard ==> git pull //这个也可以
 
 git log --no-merges origin/master ^issue54 //查看issue54本地分支与当前最新的仓库代码的区别
 
 git log --abbrev-commit --pretty=oneline
+
+git reset --hard HEAD~3 //回退3个版本
 
 
 git fetch origin ==> git log --no-merges origin/master ^issue54 ==> git checkout master ==> git merge issue54 ==> git merge origin/master ==> git push origin master   //完整的更新代码的流程
@@ -137,7 +141,8 @@ No.14
 是查看目前的每一行是哪个提交最后改动的
 git blame filename
 
-No.15 强制同步
+No.15 强制远端仓库同步
+git fetch origin master -v
 git reset --hard origin/master
 
 No.16 修改commit中的user, mail
@@ -245,5 +250,18 @@ trailing-space, space-before-tab, indent-with-non-tab, cr-at-eol
 generate a confict
 
 
+No.41 如果希望保存本地改动并拉下最新服务器代码，手动merge，使用命令如下
+git stash
+git pull
+git stash pop
+git diff -w cn/trinea/appsearch/MainActivity.java
+
+No.42 git多用户提交冲突二
+场景：用户UserA提交了change A，没有merge，之后用户UserB提交了change B，
+merge成功。当merge change A时出错，会提示
+git reset --hard HEAD~2
+git pull
+git fetch ssh://xxxx refs/changes/46/28146/1 && git cherry-pick FETCH_HEAD
+git push gerrit:xxxxxx HEAD:refs/for/xxxxxx
 
 
