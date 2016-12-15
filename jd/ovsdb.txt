@@ -1,0 +1,89 @@
+sudo ovs-vsctl list port | grep -o -e 'tap[0-9a-f-]*' -e 'q[rg]-[0-9a-f-]*'
+
+
+
+ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/usr/local/var/run/openvswitch/db.sock --private-key=db:Open_vSwitch,SSL,private_key --certificate=db:Open_vSwitch,SSL,certificate --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert --no-chdir --log-file=/var/log/openvswitch/ovsdb-server.log --pidfile=/usr/local/var/run/openvswitch/ovsdb-server.pid --detach
+
+
+ovs-vswitchd unix:/usr/local/var/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --no-chdir --log-file=/var/log/openvswitch/ovs-vswitchd.log --pidfile=/usr/local/var/run/openvswitch/ovs-vswitchd.pid --detach
+
+
+sudo ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock \
+                     --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+                     --private-key=db:Open_vSwitch,SSL,private_key \
+                     --certificate=db:Open_vSwitch,SSL,certificate \
+                     --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert \
+                     --pidfile --detach
+sudo ovs-vsctl --no-wait init
+sudo ovs-vswitchd --pidfile --detach
+
+
+
+ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/usr/local/var/run/openvswitch/db.sock --private-key=db:Open_vSwitch,SSL,private_key --certificate=db:Open_vSwitch,SSL,certificate --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert --no-chdir --log-file=/var/log/openvswitch/ovsdb-server.log --pidfile=/usr/local//var/run/openvswitch/ovsdb-server.pid --detach
+
+ovs-vswitchd unix:/usr/local/var/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --no-chdir --log-file=/var/log/openvswitch/ovs-vswitchd.log --pidfile=/usr/local//var/run/openvswitch/ovs-vswitchd.pid --detach
+
+
+sudo vim /usr/share/openvswitch/scripts/ovs-lib
+
+
+ovsdb-server /etc/openvswitch/conf.db -vconsole:emer -vsyslog:err -vfile:info --remote=punix:/var/run/openvswitch/db.sock --private-key=db:Open_vSwitch,SSL,private_key --certificate=db:Open_vSwitch,SSL,certificate --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert --no-chdir --log-file=/var/log/openvswitch/ovsdb-server.log --pidfile=/var/run/openvswitch/ovsdb-server.pid --detach
+
+ovs-vswitchd unix:/var/run/openvswitch/db.sock -vconsole:emer -vsyslog:err -vfile:info --mlockall --no-chdir --log-file=/var/log/openvswitch/ovs-vswitchd.log --pidfile=/var/run/openvswitch/ovs-vswitchd.pid --detach
+
+dbg时使用：
+./ovs-vswitchd  --verbose --pidfile --detach
+
+创建ovsdb数据库
+
+ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema # 后续可以更改数据库的schema, e.g. ovsdb-tool convert /usr/local/etc/openvswitch/conf.db xxxx.schema
+
+启动ovsdb-server
+
+ovsdb-server /usr/local/etc/openvswitch/conf.db --remote=punix:/usr/local/var/run/openvswitch/db.sock --remote=db:Open_vSwitch,manager_options --pidfile --detach --log-file
+
+启动vswitchd daemon
+
+需要指定和ovsdb-server通信的机制，默认是unix:/usr/local/var/run/openswitch/db.sock
+
+ovs-vsctl --no-wait init
+
+ovs-vswitchd --pidfile --detach unix:/usr/local/var/run/openvswitch/db.sock --log-file --verbose
+(--verbose会产生debug log)
+
+我们可以通过ovs-appctl来管理ovsdb-server, ovs-vswitchd这些daemon，e.g. 
+
+ovs-appctl -t ovsdb-server exit, ovs-appctl -t ovsdb-server ovsdb-server/reconnect
+
+ovs-appctl -t ovs-vswitchd exit, ovs-appctl -t ovs-vswitchd qos/show, ovs-appctl -t ovs-vswitchd fdb/flush br0, ovs-appctl -t ovs-vswitchd fdb/show br0
+
+
+neutron net-create private2 --provider:network_type vxlan --provider:segmentation_id 20
+
+
+TENANT_NAME=admin
+
+TENANT_ID=$(keystone tenant-list | grep " $TENANT_NAME " | awk '{print $2}')
+
+TENANT_NET_ID=$(neutron net-create --tenant_id $TENANT_ID $TENANT_NETWORK_NAME --provider:network_type gre --provider:segmentation_id 1 | grep " id " | awk '{print $4}')
+
+TENANT_SUBNET_ID=$(neutron subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true 8.8.8.8 | grep " id " | awk '{print $4}')
+
+
+neutron net-create private2 --tenant_id 8457b68df3c6437890c1015c902ec5e5 | grep " id " | awk '{print $4}'
+
+TENANT_NET_ID=c8d93bba-5ce1-43cd-98f7-2d0fb34aec14
+TENANT_SUBNET_NAME=private2_subnet1
+FIXED_RANGE=192.168.100.0/24
+NETWORK_GATEWAY=192.168.100.1
+neutron subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true 8.8.8.8 | grep " id " | awk '{print $4}'
+
+TENANT_SUBNET_ID=907a13e9-b09c-4aa0-bbff-2ed69ced963a
+
+TENANT_ID=8457b68df3c6437890c1015c902ec5e5
+TENANT_NET_ID=418fa469-7a86-4366-82da-202cb00ea377
+TENANT_SUBNET_NAME=private1_subnet3
+FIXED_RANGE=192.168.10.0/24
+NETWORK_GATEWAY=192.168.10.1
+neutron subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true 8.8.8.8 | grep " id " | awk '{print $4}'
+

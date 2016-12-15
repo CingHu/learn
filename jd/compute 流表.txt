@@ -1,0 +1,505 @@
+
+
+
+
+
+
+
+[root@compute2 jstack-cc-controller]# ovs-ofctl dump-flows br0 -O OpenFlow13
+OFPST_FLOW reply (OF1.3) (xid=0x2):
+
+
+ cookie=0x0, duration=4.400s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0x1,in_port=2 actions=write_metadata:0x1/0xffffffff,goto_table:40
+ cookie=0x0, duration=4.400s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0x1,in_port=4 actions=write_metadata:0x1/0xffffffff,goto_table:40
+ cookie=0x0, duration=4.342s, table=0, n_packets=0, n_bytes=0, priority=100,in_port=1 actions=goto_table:37
+ 
+ 
+ cookie=0x0, duration=4.342s, table=5, n_packets=0, n_bytes=0, priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:20
+ 
+ 
+ cookie=0x0, duration=4.360s, table=10, n_packets=0, n_bytes=0, priority=50 actions=goto_table:20
+ 
+ 
+ cookie=0x0, duration=4.342s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=4.342s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=4.342s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=4.342s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ cookie=0x0, duration=4.342s, table=15, n_packets=0, n_bytes=0, priority=1 actions=drop
+ 
+ 
+ cookie=0x0, duration=4.342s, table=20, n_packets=0, n_bytes=0, priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:35
+ cookie=0x0, duration=4.342s, table=20, n_packets=0, n_bytes=0, priority=100,arp actions=goto_table:25
+ cookie=0x0, duration=4.342s, table=20, n_packets=0, n_bytes=0, priority=100,udp,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:30
+ cookie=0x0, duration=4.342s, table=20, n_packets=0, n_bytes=0, priority=50 actions=goto_table:40
+ 
+ 
+ cookie=0x0, duration=4.360s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.3,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:5e:16:34->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:5e:16:34->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.3->arp_spa,IN_PORT
+ cookie=0x0, duration=4.342s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.1,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:97:64:ef->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:97:64:ef->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.1->arp_spa,IN_PORT
+ 
+ 
+ cookie=0x0, duration=4.342s, table=30, n_packets=0, n_bytes=0, priority=100,udp,metadata=0x1,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=CONTROLLER:65535
+ 
+ 
+ cookie=0x0, duration=4.342s, table=35, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=set_field:8848->tcp_dst,set_field:fa:16:3e:25:fddst=169.254.169.254,tp_dst=80 actions=set_field:8848->tcp_dst,set_field:fa:16:3e:25:fd:7e->eth_dst,goto_table:36 
+ 
+ cookie=0x0, duration=11.230s, table=36, n_packets=0, n_bytes=0, priority=200,tcp,tcp_flags=+syn-ack actions=CONTROLLER:65535 
+ cookie=0x0, duration=11.230s, table=36, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254 actions=move:NXM_NX_REG6[]->NXM_OF_IP_SRC[],load:0x1->NXM_OF_IP_SRC[31],output:1 
+ 
+ 
+ cookie=0x0, duration=11.230s, table=40, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:97:64:ef actions=set_field:0x1->tun_id,goto_table:50 
+ 
+ 
+ cookie=0x0, duration=11.230s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:60 
+ cookie=0x0, duration=11.230s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:60 
+ cookie=0x0, duration=11.230s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[]) 
+ cookie=0x0, duration=11.230s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ cookie=0x0, duration=11.230s, table=55, n_packets=0, n_bytes=0, priority=1 actions=drop 
+ 
+ 
+ cookie=0x0, duration=11.288s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x2,metadata=0x1 actions=output:NXM_NX_REG7[] 
+ cookie=0x0, duration=11.288s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x4,metadata=0x1 actions=output:NXM_NX_REG7[] 
+ cookie=0x0, duration=11.230s, table=60, n_packets=0, n_bytes=0,priority=100,metadata=0x1,dl_dst=fa:16:3e:97:64:ef actions=group:1
+ 
+ 
+ [root@compute2 jstack-cc-controller]# ovs-ofctl dump-groups br0 -O openflow13
+OFPST_GROUP_DESC reply (OF1.3) (xid=0x2):
+ group_id=1,type=select,bucket=actions=output:2,bucket=actions=output:4
+ 
+ 
+ 
+ 
+ 
+ 
+ //起VM后
+ [root@compute1 jstack-controller]# ovs-ofctl dump-flows br0 -O openflow13 
+OFPST_FLOW reply (OF1.3) (xid=0x2):
+ //根据tunnel id识别出来，是从tunnel方向过来的包，写入metadata为1，goto table 40 处理
+ cookie=0x0, duration=1530.110s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0x1,in_port=2 actions=write_metadata:0x1/0xffffffff,goto_table:40
+ cookie=0x0, duration=1530.110s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0x1,in_port=3 actions=write_metadata:0x1/0xffffffff,goto_table:40
+ cookie=0x0, duration=1530.110s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0x1,in_port=5 actions=write_metadata:0x1/0xffffffff,goto_table:40
+ 
+ //in_port=1为metadata进来的包，goto table 37 处理
+ cookie=0x0, duration=1530.036s, table=0, n_packets=0, n_bytes=0, priority=100,in_port=1 actions=goto_table:37
+ 
+ 
+ cookie=0x0, duration=1530.043s, table=5, n_packets=0, n_bytes=0,priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:20
+ 
+ 
+ cookie=0x0, duration=1530.069s, table=10, n_packets=0, n_bytes=0, priority=50 actions=goto_table:20
+ 
+ 
+ cookie=0x0, duration=1530.043s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=1530.043s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=1530.043s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=1530.043s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ cookie=0x0, duration=1530.043s, table=15, n_packets=0, n_bytes=0, priority=1 actions=drop
+ 
+ 
+ cookie=0x0, duration=1530.043s, table=20, n_packets=0, n_bytes=0, priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:35
+ cookie=0x0, duration=1530.043s, table=20, n_packets=0, n_bytes=0, priority=100,arp actions=goto_table:25
+ cookie=0x0, duration=1530.043s, table=20, n_packets=0, n_bytes=0, priority=100,udp,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:30
+ cookie=0x0, duration=1530.043s, table=20, n_packets=0, n_bytes=0, priority=50 actions=goto_table:40
+ 
+ 
+ cookie=0x0, duration=1530.069s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.4,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:73:c9:74->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:73:c9:74->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.4->arp_spa,IN_PORT
+ cookie=0x0, duration=1530.043s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.3,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:5e:16:34->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:5e:16:34->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.3->arp_spa,IN_PORT
+ cookie=0x0, duration=1530.043s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.1,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:97:64:ef->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:97:64:ef->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.1->arp_spa,IN_PORT
+ 
+ 
+ cookie=0x0, duration=1530.036s, table=30, n_packets=0, n_bytes=0, priority=100,udp,metadata=0x1,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=CONTROLLER:65535
+ 
+ 
+ cookie=0x0, duration=1530.036s, table=35, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=set_field:8848->tcp_dst,set_field:fa:16:3e:25:fd:7e->eth_dst,goto_table:36
+ 
+ 
+ cookie=0x0, duration=1530.036s, table=36, n_packets=0, n_bytes=0, priority=200,tcp,tcp_flags=+syn-ack actions=CONTROLLER:65535
+ cookie=0x0, duration=1530.036s, table=36, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254 actions=move:NXM_NX_REG6[]->NXM_OF_IP_SRC[],load:0x1->NXM_OF_IP_SRC[31],output:1
+ 
+ 
+ cookie=0x0, duration=1530.043s, table=40, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:5e:16:34 actions=set_field:0x1->tun_id,set_field:0x5->reg7,goto_table:60
+ cookie=0x0, duration=1530.043s, table=40, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:97:64:ef actions=set_field:0x1->tun_id,goto_table:50
+ 
+ 
+ cookie=0x0, duration=1530.043s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:60
+ cookie=0x0, duration=1530.043s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:60
+ cookie=0x0, duration=1530.043s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=1530.043s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ cookie=0x0, duration=1530.043s, table=55, n_packets=0, n_bytes=0, priority=1 actions=drop
+ 
+ 
+ cookie=0x0, duration=1530.110s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x2,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=1530.110s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x3,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=1530.110s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x5,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=1530.043s, table=60, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:97:64:ef actions=group:1
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ ******************************************************************************************************************
+ *								flow rule 																      *
+ ******************************************************************************************************************
+ 
+ //computeA流表
+ [root@computeA jstack-cc-controller]# ovs-ofctl dump-flows br0 -O openflow13
+OFPST_FLOW reply (OF1.3) (xid=0x2):
+
+ ===============0=============0=================ingress classification ==============0=============================
+ >> ingress packet from tunnel port,write_metadata是基于subnet id随机分配的,每个subnet都有一个metadata值
+ cookie=0x0, duration=38495.091s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0xa,in_port=1 actions=write_metadata:0x2/0xffffffff,goto_table:40
+ cookie=0x0, duration=38495.091s, table=0, n_packets=0, n_bytes=0, priority=1000,tun_id=0xa,in_port=2 actions=write_metadata:0x2/0xffffffff,goto_table:40
+ 
+ >> detect pkt for vrmonitor
+ cookie=0x0, duration=9.829s, table=0, n_packets=0, n_bytes=0, priority=200,dl_src=77:66:55:44:33:22,dl_dst=22:33:44:55:66:77,dl_type=0x88cd actions=CONTROLLER:65535
+ 
+ >> ingress from internal ovs port from vm
+ cookie=0x0, duration=38495.083s, table=0, n_packets=39700, n_bytes=3821104, priority=100,in_port=4 actions=set_field:0x4->reg6,write_metadata:0x1/0xffffffff,goto_table:5
+ cookie=0x0, duration=38495.075s, table=0, n_packets=0, n_bytes=0, priority=100,in_port=9 actions=set_field:0x9->reg6,write_metadata:0x1/0xffffffff,goto_table:5
+ cookie=0x0, duration=38495.067s, table=0, n_packets=1601, n_bytes=154882, priority=100,in_port=3 actions=set_field:0x3->reg6,write_metadata:0x1/0xffffffff,goto_table:5
+ cookie=0x0, duration=38495.051s, table=0, n_packets=0, n_bytes=0, priority=100,in_port=5 actions=set_field:0x5->reg6,write_metadata:0x2/0xffffffff,goto_table:5
+ 
+ >> in_port=6为tap_metadata端口，此流表为从metadata app回来的包，goto 37 ??? 37号表在哪
+ cookie=0x0, duration=38495.049s, table=0, n_packets=0, n_bytes=0, priority=100,in_port=6 actions=goto_table:37
+ 
+  ===============5=============5================ ingress port security ===========5==============================
+ >> 识别出是VM访问metadata服务，goto 20处理
+ cookie=0x0, duration=38495.049s, table=5, n_packets=0, n_bytes=0, priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:20
+ 
+ >> port security：ip包 如果不是访问metadata服务，那么ingress port security处理，goto 10
+ cookie=0x0, duration=38495.083s, table=5, n_packets=38459, n_bytes=3768982, priority=100,ip,in_port=4,dl_src=fa:16:3e:6c:e5:40,nw_src=172.19.29.4 actions=goto_table:10
+ cookie=0x0, duration=38495.075s, table=5, n_packets=0, n_bytes=0, priority=100,ip,in_port=9,dl_src=fa:16:3e:e3:74:d9,nw_src=172.19.29.5 actions=goto_table:10
+ cookie=0x0, duration=38495.067s, table=5, n_packets=1565, n_bytes=153370, priority=100,ip,in_port=3,dl_src=fa:16:3e:a2:06:26,nw_src=172.19.29.3 actions=goto_table:10
+ cookie=0x0, duration=38495.051s, table=5, n_packets=0, n_bytes=0, priority=100,ip,in_port=5,dl_src=fa:16:3e:d3:af:d4,nw_src=10.100.10.3 actions=goto_table:10
+ 
+ >> port security: arp snooping
+ cookie=0x0, duration=38495.083s, table=5, n_packets=1241, n_bytes=52122, priority=100,arp,in_port=4,dl_src=fa:16:3e:6c:e5:40,arp_spa=172.19.29.4,arp_sha=fa:16:3e:6c:e5:40 actions=goto_table:20
+ cookie=0x0, duration=38495.075s, table=5, n_packets=0, n_bytes=0, priority=100,arp,in_port=9,dl_src=fa:16:3e:e3:74:d9,arp_spa=172.19.29.5,arp_sha=fa:16:3e:e3:74:d9 actions=goto_table:20
+ cookie=0x0, duration=38495.067s, table=5, n_packets=36, n_bytes=1512, priority=100,arp,in_port=3,dl_src=fa:16:3e:a2:06:26,arp_spa=172.19.29.3,arp_sha=fa:16:3e:a2:06:26 actions=goto_table:20
+ cookie=0x0, duration=38495.051s, table=5, n_packets=0, n_bytes=0, priority=100,arp,in_port=5,dl_src=fa:16:3e:d3:af:d4,arp_spa=10.100.10.3,arp_sha=fa:16:3e:d3:af:d4 actions=goto_table:20
+ 
+ >> port security: dhcp snooping 
+ cookie=0x0, duration=38495.083s, table=5, n_packets=0, n_bytes=0, priority=100,udp,in_port=4,dl_src=fa:16:3e:6c:e5:40,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:20
+ cookie=0x0, duration=38495.075s, table=5, n_packets=0, n_bytes=0, priority=100,udp,in_port=9,dl_src=fa:16:3e:e3:74:d9,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:20
+ cookie=0x0, duration=38495.067s, table=5, n_packets=0, n_bytes=0, priority=100,udp,in_port=3,dl_src=fa:16:3e:a2:06:26,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:20
+ cookie=0x0, duration=38495.051s, table=5, n_packets=0, n_bytes=0, priority=100,udp,in_port=5,dl_src=fa:16:3e:d3:af:d4,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:20
+ 
+ //DROP ：没有匹配的包，默认254号表drop 
+ 
+ ===============10=============10====================EGRESSCTSG=================10================================
+ >> EGRESSCTSG: sends traffic to connection tracking table, traffic from vm not tunnel
+ >> 此表决定哪些traffic需要经过security group，仅限VM过来的包，tunnel过来的包不需要经过
+ cookie=0x0, duration=38495.083s, table=10, n_packets=38459, n_bytes=3768982, priority=100,ip,reg6=0x4 actions=ct(table=15,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.075s, table=10, n_packets=0, n_bytes=0, priority=100,ip,reg6=0x9 actions=ct(table=15,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.067s, table=10, n_packets=1565, n_bytes=153370, priority=100,ip,reg6=0x3 actions=ct(table=15,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.051s, table=10, n_packets=0, n_bytes=0, priority=100,ip,reg6=0x5 actions=ct(table=15,zone=OXM_OF_METADATA[0..15])
+ 
+ >> 非ip报文或是从tunnel过来的包pass
+ cookie=0x0, duration=38495.051s, table=10, n_packets=0, n_bytes=0, priority=50 actions=goto_table:20
+ 
+  ===============15=============15==================Egress Security Group =================15====================
+ >> let packets matched a established/related connection pass
+ cookie=0x0, duration=38495.050s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=38495.050s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:20
+ cookie=0x0, duration=38495.050s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ 
+ >> drop for invalid packet
+ cookie=0x0, duration=38495.050s, table=15, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ 
+ >> 匹配conj_id后表明，此包已经被ct匹配过了，直接pass
+ cookie=0x0, duration=38495.083s, table=15, n_packets=38459, n_bytes=3768982, priority=1000,conj_id=4,ip,reg6=0x4 actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.075s, table=15, n_packets=0, n_bytes=0, priority=1000,conj_id=9,ip,reg6=0x9 actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.067s, table=15, n_packets=1565, n_bytes=153370, priority=1000,conj_id=3,ip,reg6=0x3 actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.051s, table=15, n_packets=0, n_bytes=0, priority=1000,conj_id=5,ip,reg6=0x5 actions=ct(commit,table=20,zone=NXM_NX_CT_ZONE[])
+ 
+ >> 如果不匹配conj_id, 那么表明还没经过ct，ct第一阶段处理
+ cookie=0x0, duration=38495.083s, table=15, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg6=0x4 actions=conjunction(4,1/2)
+ cookie=0x0, duration=38495.075s, table=15, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg6=0x9 actions=conjunction(9,1/2)
+ cookie=0x0, duration=38495.067s, table=15, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg6=0x3 actions=conjunction(3,1/2)
+ cookie=0x0, duration=38495.051s, table=15, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg6=0x5 actions=conjunction(5,1/2)
+ 
+ >> ct第二阶段处理
+ cookie=0x0, duration=38495.083s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x4,nw_dst=172.19.29.0/24 actions=conjunction(4,2/2)
+ cookie=0x0, duration=38495.083s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x4,nw_dst=10.100.10.0/24 actions=conjunction(4,2/2)
+ cookie=0x0, duration=38495.075s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x9,nw_dst=172.19.29.0/24 actions=conjunction(9,2/2)
+ cookie=0x0, duration=38495.075s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x9,nw_dst=10.100.10.0/24 actions=conjunction(9,2/2)
+ cookie=0x0, duration=38495.066s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x3,nw_dst=172.19.29.0/24 actions=conjunction(3,2/2)
+ cookie=0x0, duration=38495.066s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x3,nw_dst=10.100.10.0/24 actions=conjunction(3,2/2)
+ cookie=0x0, duration=38495.051s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x5,nw_dst=172.19.29.0/24 actions=conjunction(5,2/2)
+ cookie=0x0, duration=38495.051s, table=15, n_packets=0, n_bytes=0, priority=100,icmp,reg6=0x5,nw_dst=10.100.10.0/24 actions=conjunction(5,2/2)
+ 
+ >> Egress Security Group : default drop
+ cookie=0x0, duration=38495.050s, table=15, n_packets=0, n_bytes=0, priority=1 actions=drop
+ 
+ ===============20=========20=====================报文分发===========================20==========================
+ >> 报文分发，包括metadata service报文（35），arp报文（25），dhcp报文（30），数据报文（40）
+ >> metadata service goto 35
+ cookie=0x0, duration=38495.049s, table=20, n_packets=0, n_bytes=0, priority=200,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=goto_table:35
+ 
+ >> arp packet goto 25
+ cookie=0x0, duration=38495.049s, table=20, n_packets=1277, n_bytes=53634, priority=100,arp actions=goto_table:25
+ 
+ >> dhcp request packet goto 30
+ cookie=0x0, duration=38495.049s, table=20, n_packets=0, n_bytes=0, priority=100,udp,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=goto_table:30
+ 
+ >> data packet
+ cookie=0x0, duration=38495.049s, table=20, n_packets=40024, n_bytes=3922352, priority=50 actions=goto_table:40
+ 
+ ===============25=========25=================ARP报文处理=========================25==============================
+ >> VM ARP报文，预下发子网内所有VM的ARP
+ cookie=0x0, duration=38495.083s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.19.29.4,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:6c:e5:40->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:6c:e5:40->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.19.29.4->arp_spa,IN_PORT
+ cookie=0x0, duration=38495.075s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.19.29.5,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:e3:74:d9->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:e3:74:d9->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.19.29.5->arp_spa,IN_PORT
+ cookie=0x0, duration=38495.066s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.19.29.3,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:a2:06:26->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:a2:06:26->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.19.29.3->arp_spa,IN_PORT
+ 
+ >> 子网1的网关ARP报文代答
+ cookie=0x0, duration=38495.066s, table=25, n_packets=1277, n_bytes=53634, priority=100,arp,metadata=0x1,arp_tpa=172.19.29.1,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:15:9a:ce->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:15:9a:ce->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.19.29.1->arp_spa,IN_PORT
+ 
+ >> 另一个子网的ARP处理
+ cookie=0x0, duration=38495.051s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x2,arp_tpa=10.100.10.3,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:d3:af:d4->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:d3:af:d4->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:10.100.10.3->arp_spa,IN_PORT
+ cookie=0x0, duration=38495.050s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x2,arp_tpa=10.100.10.4,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:b2:aa:7b->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:b2:aa:7b->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:10.100.10.4->arp_spa,IN_PORT
+ 
+ >> 子网2的网关ARP报文处理
+ cookie=0x0, duration=38495.050s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x2,arp_tpa=10.100.10.1,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:12:78:6f->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:12:78:6f->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:10.100.10.1->arp_spa,IN_PORT
+ 
+ ===============30=========30=================DHCP报文处理=========================30==============================
+ >> DHCP request报文上送控制器
+ cookie=0x0, duration=38495.058s, table=30, n_packets=0, n_bytes=0, priority=100,udp,metadata=0x1,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=CONTROLLER:65535
+ cookie=0x0, duration=38495.049s, table=30, n_packets=0, n_bytes=0, priority=100,udp,metadata=0x2,dl_dst=ff:ff:ff:ff:ff:ff,tp_src=68,tp_dst=67 actions=CONTROLLER:65535
+ 
+ 
+ ===============35/36=========35/36============Metadata Service 报文==============35/36===========================
+ 
+ cookie=0x0, duration=38495.049s, table=35, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254,tp_dst=80 actions=set_field:8848->tcp_dst,set_field:fa:16:3e:25:fd:7e->eth_dst,goto_table:36
+ 
+ >> TCP 首包上送 controller，然后控制器下发NAT流表
+ cookie=0x0, duration=38495.049s, table=36, n_packets=0, n_bytes=0, priority=200,tcp,tcp_flags=+syn-ack actions=CONTROLLER:65535
+ 
+ >> port_id=6(tap_metadata), 为metadata service端口
+ cookie=0x0, duration=38495.049s, table=36, n_packets=0, n_bytes=0, priority=100,tcp,nw_dst=169.254.169.254 actions=move:NXM_NX_REG6[]->NXM_OF_IP_SRC[],load:0x1->NXM_OF_IP_SRC[31],output:6
+ 
+ ===============40=============40==================== L3 routing ===============40================================
+  cookie=0x0, duration=13.135s, table=40, n_packets=1, n_bytes=98, send_flow_rem priority=100,ip,tun_id=0x1,nw_dst=172.16.1.0/24 actions=write_metadata:0x401/0xffffffff,goto_table:45
+  .
+  
+ ===============45=============45==================== L2 lookup ===============45===================================
+ >> 从tunnel和vm来的包都会经过L2 lookup流表处理
+ >> 类似查询mac表，根据目的MAC，查询出端口，将出端口存入reg7
+ cookie=0x0, duration=38495.082s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:6c:e5:40 actions=set_field:0x4->reg7,goto_table:50
+ cookie=0x0, duration=38495.074s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:e3:74:d9 actions=set_field:0x9->reg7,goto_table:50
+ cookie=0x0, duration=38495.066s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x1,dl_dst=fa:16:3e:a2:06:26 actions=set_field:0x3->reg7,goto_table:50
+ 
+ >> 类似查询mac表，根据目的MAC，查询出端口，对于去往网关的报文，进行tunnel封装
+ cookie=0x0, duration=38495.066s, table=45, n_packets=40024, n_bytes=3922352, priority=100,metadata=0x1,dl_dst=fa:16:3e:15:9a:ce actions=set_field:0xa->tun_id,goto_table:60
+ 
+ >> 另一个子网的报文处理，同上
+ cookie=0x0, duration=38495.051s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x2,dl_dst=fa:16:3e:d3:af:d4 actions=set_field:0x5->reg7,goto_table:50
+ 
+ >> 同子网跨host访问，配置tunnel id与reg7(出端口可以是tunnel口或是tap口)
+ cookie=0x0, duration=38495.050s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x2,dl_dst=fa:16:3e:b2:aa:7b actions=set_field:0xa->tun_id,set_field:0x2->reg7,goto_table:60
+ 
+ >> 类似查询mac表，根据目的MAC，查询出端口，对于去往网关的报文，进行tunnel封装
+ cookie=0x0, duration=38495.050s, table=45, n_packets=0, n_bytes=0, priority=100,metadata=0x2,dl_dst=fa:16:3e:12:78:6f actions=set_field:0xa->tun_id,goto_table:60
+ 
+ 
+ ===============50=============50================INGRESSCT =============50==========================
+ >> INGRESSCT , from VM not tunnel
+ cookie=0x0, duration=38495.082s, table=50, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x4 actions=ct(table=55,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.074s, table=50, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x9 actions=ct(table=55,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.066s, table=50, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x3 actions=ct(table=55,zone=OXM_OF_METADATA[0..15])
+ cookie=0x0, duration=38495.050s, table=50, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x5 actions=ct(table=55,zone=OXM_OF_METADATA[0..15])
+ 
+ >> default action: goto 60
+ cookie=0x0, duration=38495.051s, table=50, n_packets=0, n_bytes=0, priority=50 actions=goto_table:60
+ 
+ 
+ 
+ ===============55=============55=============== Ingress Port Security =============55===========================
+
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+est-rel-inv+trk actions=goto_table:60
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=-new+rel-inv+trk actions=goto_table:60
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+new+rel-inv+trk,ip actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=2000,ct_state=+inv+trk actions=drop
+ cookie=0x0, duration=38495.082s, table=55, n_packets=0, n_bytes=0, priority=1000,conj_id=504,ip,reg7=0x4 actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.074s, table=55, n_packets=0, n_bytes=0, priority=1000,conj_id=509,ip,reg7=0x9 actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.066s, table=55, n_packets=0, n_bytes=0, priority=1000,conj_id=503,ip,reg7=0x3 actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=1000,conj_id=505,ip,reg7=0x5 actions=ct(commit,table=60,zone=NXM_NX_CT_ZONE[])
+ cookie=0x0, duration=38495.082s, table=55, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg7=0x4 actions=conjunction(504,1/2)
+ cookie=0x0, duration=38495.074s, table=55, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg7=0x9 actions=conjunction(509,1/2)
+ cookie=0x0, duration=38495.066s, table=55, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg7=0x3 actions=conjunction(503,1/2)
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=100,ct_state=+new-est-rel-inv+trk,reg7=0x5 actions=conjunction(505,1/2)
+ cookie=0x0, duration=38495.082s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x4,nw_dst=10.100.10.0/24 actions=conjunction(504,2/2)
+ cookie=0x0, duration=38495.082s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x4,nw_dst=172.19.29.0/24 actions=conjunction(504,2/2)
+ cookie=0x0, duration=38495.074s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x9,nw_dst=10.100.10.0/24 actions=conjunction(509,2/2)
+ cookie=0x0, duration=38495.074s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x9,nw_dst=172.19.29.0/24 actions=conjunction(509,2/2)
+ cookie=0x0, duration=38495.066s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x3,nw_dst=10.100.10.0/24 actions=conjunction(503,2/2)
+ cookie=0x0, duration=38495.066s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x3,nw_dst=172.19.29.0/24 actions=conjunction(503,2/2)
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x5,nw_dst=10.100.10.0/24 actions=conjunction(505,2/2)
+ cookie=0x0, duration=38495.050s, table=55, n_packets=0, n_bytes=0, priority=100,ip,reg7=0x5,nw_dst=172.19.29.0/24 actions=conjunction(505,2/2)
+ 
+ >> default action: drop
+ cookie=0x0, duration=38495.049s, table=55, n_packets=0, n_bytes=0, priority=1 actions=drop
+ 
+ 
+ ===============60=============60=============== OUTPUT =============60===========================
+ >> to tunnel port, metadata: subnet, reg7: output port
+ >> 同子网同host通信
+ cookie=0x0, duration=38641.260s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x1,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=38495.091s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x1,metadata=0x2 actions=output:NXM_NX_REG7[]
+ 
+ >> 同子网跨host通信
+ cookie=0x0, duration=38495.091s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x2,metadata=0x2 actions=output:NXM_NX_REG7[]
+ 
+ >> to vm, metadata: subnet, reg7: output port
+ cookie=0x0, duration=38495.082s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x4,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=38495.074s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x9,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=38495.066s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x3,metadata=0x1 actions=output:NXM_NX_REG7[]
+ cookie=0x0, duration=38495.050s, table=60, n_packets=0, n_bytes=0, priority=100,reg7=0x5,metadata=0x2 actions=output:NXM_NX_REG7[]
+ 
+ >> 根据metadata和目的mac判断为去往VR（网关）的报文，那么送往group处理
+ cookie=0x0, duration=38495.066s, table=60, n_packets=39878, n_bytes=3908044, priority=100,metadata=0x1,dl_dst=fa:16:3e:15:9a:ce actions=group:10
+ 
+ >> 根据metadata和目的mac判断为去往VR（网关）的报文，那么送往group处理
+ cookie=0x0, duration=38495.050s, table=60, n_packets=0, n_bytes=0, priority=100,metadata=0x2,dl_dst=fa:16:3e:12:78:6f actions=group:10 
+ 
+ ==================================================Group ===================================================
+ >> ECMP/multipath
+ group_id=10,type=select,bucket=actions=output:1
+ 
+ 
+ 
+ subnet:
+ {
+    "code": 0,
+    "message": "",
+    "Result": {
+        "subnets": [
+            {
+                "id": "1d05961d-e641-417e-8f19-803cae564547",
+                "version": 5,
+                "vpcId": "9e5ef3bb-bb60-4eb5-a98e-c487aea25f6a",
+                "tenantId": "tenant1",
+                "metadata": 1025,
+                "vni": 1,
+                "mtu": 1500,
+                "network": "172.16.1.0/24",
+                "dns": null,
+                "routers": [
+                    "10.10.10.4",
+                    "10.10.10.5"
+                ],
+                "ports": [
+                    {
+                        "id": "df51f6d0-8381-47a5-8fa5-a46a8b64e095",
+                        "version": 1,
+                        "fixedip": "172.16.1.4",
+                        "deviceId": "compute1_ns",
+                        "mac": "fa:16:3e:73:c9:74",
+                        "host": "10.10.10.2",
+                        "type": 0,
+                        "rate": 10,
+                        "burst": 1,
+                        "securitygroupIds": [
+                            "e354500f-2cc1-414b-a7d9-56a4e8ea562e"
+                        ]
+                    },
+                    {
+                        "id": "b115bdf0-ca9a-42e2-8f87-6b0e252ec9e3",
+                        "version": 1,
+                        "fixedip": "172.16.1.3",
+                        "deviceId": "compute2_ns",
+                        "mac": "fa:16:3e:5e:16:34",
+                        "host": "10.10.10.3",
+                        "type": 0,
+                        "rate": 10,
+                        "burst": 1,
+                        "securitygroupIds": [
+                            "e354500f-2cc1-414b-a7d9-56a4e8ea562e"
+                        ]
+                    },
+                    {
+                        "id": "eef67bf2-3d99-458b-b2fe-0616259ba63e",
+                        "version": 0,
+                        "fixedip": "172.16.1.5",
+                        "deviceId": "compute1_ns_2",
+                        "mac": "fa:16:3e:8a:06:16",
+                        "host": "10.10.10.2",
+                        "type": 0,
+                        "rate": 10,
+                        "burst": 1,
+                        "securitygroupIds": [
+                            "e354500f-2cc1-414b-a7d9-56a4e8ea562e"
+                        ]
+                    }
+                ],
+                "dhcpPort": {
+                    "id": "e5e546b5-5b2b-4afe-a72b-e95a64894b80",
+                    "version": 0,
+                    "fixedip": "172.16.1.2",
+                    "deviceId": "",
+                    "mac": "fa:16:3e:f9:df:5d",
+                    "host": "",
+                    "type": 2,
+                    "rate": 0,
+                    "burst": 0,
+                    "securitygroupIds": null
+                },
+                "gatewayPorts": [
+                    {
+                        "id": "d31993be-24bb-4f83-8c8a-8bda9874dd50",
+                        "version": 0,
+                        "fixedip": "172.16.1.1",
+                        "deviceId": "487cab79-bc15-48c2-b264-1b004da5f4f0",
+                        "mac": "fa:16:3e:97:64:ef",
+                        "host": "",
+                        "type": 1,
+                        "rate": 0,
+                        "burst": 0,
+                        "securitygroupIds": null
+                    }
+                ],
+                "securitygroups": [
+                    {
+                        "id": "e354500f-2cc1-414b-a7d9-56a4e8ea562e",
+                        "securitygroupRules": [
+                            {
+                                "direction": 1,
+                                "type": 0,
+                                "proto": 1,
+                                "ipPrefix": "172.16.1.0/24",
+                                "ipVersion": 0,
+                                "portStart": 0,
+                                "portEnd": 0,
+                                "remoteGroupId": "e354500f-2cc1-414b-a7d9-56a4e8ea562e"
+                            },
+                            {
+                                "direction": 0,
+                                "type": 0,
+                                "proto": 1,
+                                "ipPrefix": "172.16.1.0/24",
+                                "ipVersion": 0,
+                                "portStart": 0,
+                                "portEnd": 0,
+                                "remoteGroupId": "e354500f-2cc1-414b-a7d9-56a4e8ea562e"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+ 
+ 
+ 
