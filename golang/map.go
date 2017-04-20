@@ -1,0 +1,1 @@
+env GOTRACEBACK=crash nohup /usr/local/bin/cc_controller /etc/cc_controller/compute.json  >/var/log/cc_controller/app.log 2>&1 & disown
