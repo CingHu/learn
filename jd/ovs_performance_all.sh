@@ -38,6 +38,24 @@ ethtool -N ${UNDERLAY_NIC_NAME} rx-flow-hash udp4 sfdn
 sed -i "/rx-flow-hash/d" $NIC_PATH
 echo "ETHTOOL_OPTS=\"-N $UNDERLAY_NIC_NAME rx-flow-hash udp4 sfdn\"" >> $NIC_PATH
 
+#ring buffer
+#warning increase delay
+ethtool -G $UNDERLAY_NIC_NAME rx 2048
+sed -i "/-G $UNDERLAY_NIC_NAME rx/d" $NIC_PATH
+echo "ETHTOOL_OPTS=\"-G $UNDERLAY_NIC_NAME rx 2048\"" >> $NIC_PATH
+
+#interrupt aggregation
+ethtool -C $UNDERLAY_NIC_NAME rx-usecs 50
+sed -i "/rx-usecs/d" $NIC_PATH
+echo "ETHTOOL_OPTS=\"-c $UNDERLAY_NIC_NAME rx-usecs 50\"" >> $NIC_PATH
+
+#close gso gro lro
+ethtool -K $UNDERLAY_NIC_NAME gso off gro off lro off
+sed -i "/gso/d" $NIC_PATH
+sed -i "/gro/d" $NIC_PATH
+sed -i "/lro/d" $NIC_PATH
+echo "ETHTOOL_OPTS=\"-K $UNDERLAY_NIC_NAME gso off gro off lro off\"" >> $NIC_PATH
+
 
 #warning: can not consider numa
 #irq binding cpu 
@@ -180,6 +198,14 @@ sysctl -p
 
 # warning: restart host, config loss
 echo "500224" > /sys/module/nf_conntrack/parameters/hashsize
+mkdir /etc/modprobe.d
+if [ ! -f  $CONTRACK_CONF_FILE ];then
+    echo "" > $CONTRACK_CONF_FILE
+else
+    sed -i "/hashsize/d" $CONTRACK_CONF_FILE
+	echo "options nf_conntrack hashsize=500224" >> $CONTRACK_CONF_FILE
+fi
+
 
 
 
@@ -214,6 +240,17 @@ ovs-vsctl set Open_Vswitch $uuid other_config:n-revalidator-threads=$REVALIDATOR
 ovs-vsctl list Open_Vswitch
 ovs-appctl upcall/show
 
+#config netdev_max_backlog
+sed -i "/net.core.netdev_max_backlog/d" /etc/sysctl.conf
+sed -i "/net.core.rmem_max/d" /etc/sysctl.conf
+sed -i "/net.core.wmem_max/d" /etc/sysctl.conf
+sed -i "/net.core.rmem_default/d" /etc/sysctl.conf
+sed -i "/net.core.wmem_default/d" /etc/sysctl.conf
 
+echo "net.core.netdev_max_backlog" >> /etc/sysctl.conf
+echo "net.core.rmem_max" >> /etc/sysctl.conf
+echo "net.core.wmem_max" >> /etc/sysctl.conf
+echo "net.core.rmem_default" >> /etc/sysctl.conf
+echo "net.core.wmem_default" >> /etc/sysctl.conf
 
 

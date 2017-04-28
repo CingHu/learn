@@ -1,26 +1,30 @@
 #!/bin/bash
 
-CCC_CONFIG_FILE="/etc/cc_controller/compute.json"
-#CCC_CONFIG_FILE="/etc/cc_controller/controller_config.json"
+#CCC_CONFIG_FILE="/etc/cc_controller/compute.json"
+#CCC_CONFIG_FILE="/export/JCloud/jstack-cc/src/jd.com/cc/jstack-controller/cfg/compute.json"
+CCC_CONFIG_FILE="/etc/cc_controller/controller_config.json"
 
 BRIDGE="br0"
 MAX_OFPORT="65280"
 METADATANAME="tap_metadata"
 
+RED='\e[1;31m'
+NC='\e[0m'
+
 INTERFACE_INFO="/tmp/interfaces"
 
 function perror()
 {
-    echo "===============================Error==================================="
-    echo "Error: $@"
+    echo -e "${RED} ===============================Error=================================== ${NC}"
+    echo -e "${RED} Error: $@ ${NC}"
     clean
     exit 1
 }
 
 function pnerror()
 {
-    echo "===============================Error==================================="
-    echo "Error: $@"
+    echo -e "${RED} ===============================Error=================================== ${NC}"
+    echo -e "${RED} Error: $@ ${NC}"
     clean
 }
 

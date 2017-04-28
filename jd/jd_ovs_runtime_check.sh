@@ -1,7 +1,8 @@
 #!/bin/bash
 
-CCC_CONFIG_FILE="/etc/cc_controller/compute.json"
-#CCC_CONFIG_FILE="/etc/cc_controller/controller_config.json"
+#CCC_CONFIG_FILE="/etc/cc_controller/compute.json"
+#CCC_CONFIG_FILE="/export/JCloud/jstack-cc/src/jd.com/cc/jstack-controller/cfg/compute.json"
+CCC_CONFIG_FILE="/etc/cc_controller/controller_config.json"
 
 VSCTL="ovs-vsctl"
 DPCTL="ovs-dpctl"
@@ -10,6 +11,7 @@ OFCTL="ovs-ofctl -O openflow13"
 BRIDGE="br0"
 
 CCC="/usr/local/bin/ccc"
+#CCC="/export/JCloud/jstack-cc/src/jd.com/cc/jstack-controller/cli/main"
 #CCC="/home/jstack/src/jd.com/cc/jstack-controller/cli/main"
 
 CCCRUDETAILCMD="$CCC curdetail"
@@ -20,11 +22,16 @@ CCCURDETAIL="/tmp/curdetail"
 DUMPFLOWPATH="/tmp/dumpflows"
 DUMPGFLOWPATH="/tmp/dumpgflows"
 
+RED='\e[1;31m' 
+NC='\e[0m'
+
 function init_env()
 {
     OFPORT=""
     OFPORTHEX=""
     PORTHOST=""
+    PORTHOSTOFPORT=""
+    PORTHOSTOFPORTHEX=""
     UNDERLAYIP=""
     METADATAHEX=""
     VNI=""
@@ -32,7 +39,7 @@ function init_env()
     GWMAC=""
     PORTMAC=""
     PORTIP=""
-    VR=()
+    VR=""
     PORTINFO="/tmp/$PORTID"
     SUBNETINFO="/tmp/$SUBNETINFO"
 }
@@ -120,15 +127,15 @@ function init_cache()
 
 function EError()
 {
-        echo "========================================Error====================================="
-        echo "Error: $*"
+        echo -e "${RED} ========================================Error===================================== ${NC}"
+        echo -e "${RED} Error: $* ${NC}"
         clean
         exit 1
 }
 
 function Error()
 {
-        echo "EError: $*"
+        echo -e "${RED} Error: $* ${NC}"
 }
 
 function Info()
@@ -176,6 +183,10 @@ function get_subnet_param()
         Info "[subnet] vni of subnet $SUBNETID is $VNIHEX"
         Info "[subnet] metadata of subnet $SUBNETID is $METADATAHEX"
         Info "[subnet] gwmac of subnet $SUBNETID is $GWMAC"
+        VR=""
+        if [ "$VR" == "" ];then
+            EError "[subnet] vr of subnet $SUBNETID is null"
+        fi
         for vr in $VR
         do 
         Info "[subnet] vr of subnet $SUBNETID is $vr"
@@ -216,6 +227,10 @@ function get_vxlan_ofport()
         local vxlanhost="vx$1"
         local ofport=""
         ofport=$(get_ofport_num $vxlanhost)
+        if [ $? != 0 ];then
+              EError "ofport of $vxlanhost is invalid"
+              exit 1
+        fi
         echo $ofport
 }
 
@@ -253,7 +268,7 @@ function get_ofport()
 {
         ofport=$(get_ofport_num $1)
         if [ $? != 0 ];then
-              echo $ofport
+              EError "ofport of $vxlanhost is invalid"
               exit 1
         fi
 
@@ -289,6 +304,11 @@ function check_port_host()
                 TYPE=1 #remote port
                 Info "[port] type of $PORTID is remote_port"
         fi
+        if [ "$TYPE" == "1" ];then
+            PORTHOSTOFPORT=$(get_vxlan_ofport $PORTHOST)
+            PORTHOSTOFPORTHEX=$(echo "0x"`echo "obase=16;${PORTHOSTOFPORT}"|bc`)
+            Info "ofport of port host $PORTHOST is $PORTHOSTOFPORT"
+        fi
 }
 
 
@@ -318,7 +338,7 @@ function checkout_table_flow()
 
         match=$(echo $2 | sed -e 's/\,/\ /g')
 
-        cat $DUMPFLOWPATH | grep "table=$tableid," > $flowpath
+        cat $DUMPFLOWPATH | grep "table=$tableid, n" > $flowpath
         for m in ${match}
         do
                 cat $flowpath | grep -i ${m} > "${flowpath1}"
@@ -358,6 +378,9 @@ function check_rport_flow()
 
         #table=45, match=mac, metadata
         checkout_table_flow 45 "metadata=$METADATAHEX,$PORTMAC"
+
+        #table=60, match=mac, metadata
+        checkout_table_flow 60 "metadata=$METADATAHEX,reg7=$PORTHOSTOFPORTHEX"
 }
 
 function check_lport_flow()
@@ -373,9 +396,6 @@ function check_lport_flow()
 
         #table=15, match=ofport
         checkout_table_flow 15 "reg6=$OFPORTHEX"
-
-        #table=20, match=ofport
-        checkout_table_flow 20 "reg6=$OFPORTHEX"
 
         #table=25, match=mac, ip, metadata
         checkout_table_flow 25 "metadata=$METADATAHEX,arp_tpa=$PORTIP,$PORTMAC"
@@ -512,4 +532,5 @@ main()
 }
 
 main
+
 

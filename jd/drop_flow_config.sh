@@ -27,12 +27,14 @@ function help_usage()
     echo "-Q: query all adding drop flow"
     echo 
     echo "example1: Add a cidr drop flow"
-    echo "        sh $0 -d 192.168.1.0/24 -i qvob115bdf0-0a -A"
-    echo "example2: Add a ip address drop flow"
-    echo "        sh $0 -d 192.168.1.16 -i qvob115bdf0-oa -A"
-    echo "example3: Delete a drop flow"
+    echo "        sh $0 -d 192.168.1.0/24 -i port-c85fi11170 -A"
+    echo "example2: Add a flow to drop all ip traffic"
+    echo "        sh $0 -d 0.0.0.0/0 -i port-c85fi11170 -A"
+    echo "example3: Add a ip address drop flow"
+    echo "        sh $0 -d 192.168.1.16 -i port-c85fi11170 -A"
+    echo "example4: Delete a drop flow"
     echo "        sh $0 -c 20001  -D"
-    echo "example4: Query all adding drop flow "
+    echo "example5: Query all adding drop flow "
     echo "        sh $0 -Q"
     echo
     exit 1
@@ -165,3 +167,4 @@ function get_drop_flow_rule()
 }
 
 main $*
+
