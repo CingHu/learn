@@ -1,0 +1,96 @@
+1. ovsping.sh
+
+此脚本可以模拟VM发送ping包，在port上使用tcpdump(对于inat的port需要指定namespace)来检查是否收到icmp reply
+
+使用场景1: 向同子网的其他VM发送 ping
+sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:0d:19:a8 -w 192.168.1.5 -x 192.168.1.4
+
+使用场景2: 向网关发送ping
+sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 192.168.1.1
+
+使用场景3: 向floatingip发送ping
+sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 110.12.11.2
+
+使用场景4: 向inat的port发送ping
+sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 169.254.169.3
+
+
+结果验证：如果出现如下信息表明ping ok，否则失败, 注意ping的id固定是5000， seq固定是5000
+"
+====================== ping result ===============================
+reading from file port-1exxhsin4s.0.dmp, link-type EN10MB (Ethernet)
+06:42:39.659706 fa:16:3e:f8:1d:33 > fa:16:3e:67:a6:e6, IPv4, length 50: 172.16.1.3 > 172.16.1.9: ICMP echo reply, id 5000, seq 5000, length 16
+"
+
+2.jd_ovs_env_check.sh
+
+此脚本用于静态检查ovs的初始配置是否正确，一般情况下初始化安装compute 节点后，使用此脚本
+
+check result:
+
+Check: openvsiwth version is 2.6.0, result is OK
+Check: load mode of openvswith is exist, result is OK
+Check: bridge br0 is exist in ovs, result is OK
+Check: process_id of cc_controller is 18118, result is OK
+Check: process_id of ovs-vswitchd is 16059, result is OK
+Check: process_id of ovsdb-server is 16024, result is OK
+Check: ovs have connected cc_controller, result is OK
+Check: fail_mode of ovs is secure, result is OK
+Check: ofport of tap_metadata is 46, result is OK
+Check: ip of tap_metadata is 169.254.169.254/32, result is OK
+Info: underlayip of cc_controller config is 100.64.140.129
+Check: ip address of 100.64.140.129 exist in local host, result is OK
+Info: route of underlayip is: 100.64.140.0/24 dev em2  proto kernel  scope link  src 100.64.140.129 
+Check: route of 100.64.140.129 exist in route table, result is OK
+Check: ofport of vx100.64.130.135 is 48, result is OK
+Check: can ping 100.64.130.135, result is OK
+Check: ofport of vx100.64.130.231 is 3, result is OK
+Info: ping 100.64.130.77 ok
+Check: ofport of vx100.64.130.77 is 47, result is OK
+Check: can ping 100.64.130.77, result is OK
+Check: ofport of vx100.64.140.125 is 50, result is OK
+Check: can ping 100.64.140.125, result is OK
+Check: ofport of vx100.64.140.130 is 49, result is OK
+Check: can ping 100.64.140.130, result is OK
+Check: ofport of vx100.64.140.78 is 54, result is OK
+Check: can ping 100.64.140.78, result is OK
+
+3. jd_ovs_runtime_check.sh
+
+此脚本可以检查当前的流表是否正确，是否有丢失的情况, underlay ip的连通情况等等，可以根据port_id检查，可以根据vm_id检查
+
+sh jd_ovs_runtime_check.sh -p  [port_id]
+sh jd_ovs_runtime_check.sh -v  [vm_id]
+
+
+4.add_match_flow.sh
+此脚本用于抓取被ovs flow table drop的packet, 如果packet没有被ovs drop那么是抓不到的
+
+例如:
+如果需要抓取从port-1exxhsin4s出来的packet或是要进入port-1exxhsin4s的packet,运行"sh add_match_flow.sh port-1exxhsin4s", 然后通过tcpdump -i br0 -enn查看drop的packet以及drop的原因
+
+从port-1exxhsin4s发送的ARP报文被drop,drop的原因是没有命中ovs的25号表
+根据MAC地址判断是发送的报文, "vlan 25"表明drop的原因是没有命中25号表
+
+"
+13:56:28.755403 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
+13:56:30.753823 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
+13:56:31.755407 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
+13:56:32.758441 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
+"
+
+drop vlan:
+vlan 0   : 没有命中0号表
+vlan 5   : 没有命中5号表
+vlan 15  : 没有命中15号表
+vlan 25  : 没有命中25号表
+vlan 30  : 没有命中30号表
+vlan 35  : 没有命中35号表
+vlan 40  : 没有命中40号表
+vlan 45  : 没有命中45号表
+vlan 55  : 没有命中55号表
+vlan 60  : 没有命中60号表
+vlan 150 : egress security group drop, 报文是invalid的
+vlan 550 : ingress security group drop,报文是invalid的
+
+

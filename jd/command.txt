@@ -1,0 +1,395 @@
+
+grant all cc to test@'192.168.8.131' identified by 'test';
+grant all privileges on *.* to root@192.168.8.131 identified by '123456';
+grant all privileges on *.* to root@192.168.8.1 identified by '123456';
+
+
+select distinct s.id, s.version from host as h inner join port_binding as pb on h.id = pb.host_id inner join port as p on pb.port_id = p.id inner join subnet as s on s.id = p.subnet_id where h.name = "compute2" and p.type = 0;
+
+
+veth pair:
+TAPNAME="port-2ly5uidprt"
+MAC="fa:16:3e:8b:ac:d1"
+NS_TAP_NAME="${TAPNAME:0-7:8}_"
+IPADDR="172.16.0.6/16"
+DEFAULT_GW="172.16.0.1"
+NS_NAME=$TAPNAME
+
+
+ovs-vsctl del-port $TAPNAME
+ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME  -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC
+
+sudo ip netns del $NS_NAME
+sleep 1
+sudo ip netns add $NS_NAME
+sudo ip link add name $TAPNAME type veth peer name $NS_TAP_NAME
+sudo ip link set $TAPNAME up
+sudo ip link set $NS_TAP_NAME netns $NS_NAME
+sudo ip netns exec $NS_NAME ip link set dev lo up
+sudo ip netns exec $NS_NAME ip link set dev $NS_TAP_NAME address $MAC
+sudo ip netns exec $NS_NAME ifconfig $NS_TAP_NAME $IPADDR
+sudo ip netns exec $NS_NAME ip link set $NS_TAP_NAME up
+sudo ip netns exec $NS_NAME ip route add default via $DEFAULT_GW dev $NS_TAP_NAME
+sudo ip netns exec $NS_NAME ip a
+
+ovs-vsctl del-port $TAPNAME
+ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME  -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC
+ovs-vsctl list interface $TAPNAME
+
+
+
+
+tap:
+
+compute1:
+TAPNAME="port-ougdw5m7du"
+MAC="fa:16:3e:bb:38:ff"
+IPADDR="192.168.1.3/24"
+DEFAULT_GW="192.168.1.1"
+NS_NAME=$TAPNAME
+
+compute2:
+TAPNAME="port-brvigvjk4d"
+MAC="fa:16:3e:0d:19:a8"
+IPADDR="192.168.1.4/24"
+DEFAULT_GW="192.168.1.1"
+NS_NAME=$TAPNAME
+
+compute1:
+TAPNAME="port-abx98fm0ec"
+MAC="fa:16:3e:a2:39:1c"
+IPADDR="192.168.1.5/24"
+DEFAULT_GW="192.168.1.1"
+NS_NAME=$TAPNAME
+
+compute2:
+TAPNAME="port-f2zx0qqozd"
+MAC="fa:16:3e:f4:fa:fb"
+IPADDR="172.18.123.4/24"
+DEFAULT_GW="172.18.123.1"
+NS_NAME=$TAPNAME
+
+beicheng compute4:
+TAPNAME="port-cqyjf2ag4j"
+MAC="fa:16:3e:03:0d:54"
+IPADDR="172.18.123.3/24"
+DEFAULT_GW="172.18.123.1"
+NS_NAME=$TAPNAME
+
+
+TAPNAME="port-9e5hulm7oc"
+MAC="fa:16:3e:36:d9:c8"
+IPADDR="192.168.100.4"
+DEFAULT_GW="192.168.100.1"
+NS_NAME=$TAPNAME
+
+TAPNAME="port-feyhqtf6dj"
+MAC="fa:16:3e:50:81:c5"
+IPADDR="192.168.100.6"
+DEFAULT_GW="192.168.100.1"
+NS_NAME=$TAPNAME
+
+
+TAPNAME="port-pkmo0ini2e"
+MAC="fa:16:3e:d2:47:62"
+IPADDR="192.168.100.8"
+DEFAULT_GW="192.168.100.1"
+NS_NAME=$TAPNAME
+
+
+TAPNAME="port-hqui22je4y"
+MAC="fa:16:3e:13:e1:18"
+IPADDR="192.168.100.10"
+DEFAULT_GW="192.168.100.1"
+NS_NAME=$TAPNAME
+
+
+
+
+
+TAPNAME="port-ougdw5m7du"
+MAC="fa:16:3e:bb:38:ff"
+IPADDR="192.168.1.3"
+DEFAULT_GW="192.168.1.1"
+NS_NAME=$TAPNAME
+
+
+TAPNAME="port-brvigvjk4d"
+MAC="fa:16:3e:0d:19:a8"
+IPADDR="192.168.1.4"
+DEFAULT_GW="192.168.1.1"
+NS_NAME=$TAPNAME
+
+
+hc compute5:
+TAPNAME="port-ad1a8pnh40"
+MAC="fa:16:3e:cb:a0:bd"
+IPADDR="172.16.1.12"
+DEFAULT_GW="172.16.1.1"
+NS_NAME=$TAPNAME
+
+bc_compute1:
+TAPNAME="port-48ui4owovb "
+MAC="fa:16:3e:9c:20:cd"
+IPADDR="172.16.64.3/24"
+DEFAULT_GW="172.16.64.1"
+NS_NAME=$TAPNAME
+
+
+
+ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME -- set Interface $TAPNAME type=internal -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC
+
+sudo ip netns del $NS_NAME
+sudo ip netns add $NS_NAME
+sudo ip link set $TAPNAME netns $NS_NAME
+sudo ip netns exec $NS_NAME ip link set dev lo up
+sudo ip netns exec $NS_NAME ip link set dev $TAPNAME address $MAC
+sudo ip netns exec $NS_NAME ifconfig $TAPNAME $IPADDR
+sudo ip netns exec $NS_NAME ip link set $TAPNAME up
+sudo ip netns exec $NS_NAME ip route add default via $DEFAULT_GW dev $TAPNAME
+sudo ip netns exec $NS_NAME ip a
+
+
+dhcp:
+sudo ip netns del $NS_NAME
+sudo ip netns add $NS_NAME
+sudo ip link set $TAPNAME netns $NS_NAME
+sudo ip netns exec $NS_NAME ip link set dev lo up
+sudo ip netns exec $NS_NAME ip link set dev $TAPNAME address $MAC
+sudo ip netns exec $NS_NAME ip link set $TAPNAME up
+sudo ip netns exec $NS_NAME dhclient
+
+
+TAPNAME="port-lbg01wv8xm"
+MAC="fa:16:3e:fe:33:f1"
+IPADDR="10.12.1.3/24"
+DEFAULT_GW="10.12.1.1"
+NS_NAME=$TAPNAME
+
+ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME -- set Interface $TAPNAME type=internal -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC
+
+
+ovs-appctl ofproto/trace br0 in_port=6,arp,dl_src=$MAC,dl_dst=ff:ff:ff:ff:ff:ff,arp_tpa=172.16.1.3,arp_op=1 -generate
+
+
+
+cookie=0x0, duration=6.791s, table=25, n_packets=0, n_bytes=0, priority=100,arp,metadata=0x1,arp_tpa=172.16.1.4,arp_op=1 actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:fa:16:3e:73:c9:74->eth_src,set_field:2->arp_op,move:NXM_NX_ARP_SHA[]->NXM_NX_ARP_THA[],set_field:fa:16:3e:73:c9:74->arp_sha,move:NXM_OF_ARP_SPA[]->NXM_OF_ARP_TPA[],set_field:172.16.1.4->arp_spa,IN_PORT
+
+
+
+
+ovs-ofctl del-flows br0 --strict "priority=1000,in_port=1,dl_src=22:33:44:55:66:77,dl_dst=76:66:55:44:33:22"
+
+
+ovs-appctl ofproto/trace br0 in_port=1,dl_src=22:33:44:55:66:77,dl_dst=76:66:55:44:33:22,dl_type=0x88cd -generate
+
+
+ovs-appctl ofproto/trace br0 dl_src=d6:77:b3:e7:15:c2,dl_dst=ff:ff:ff:ff:ff:ff -generate
+
+
+
+ovs-ofctl -O openflow13 add-flow br0 "table=0,priority=1000,in_port=4,actions=drop"
+ovs-ofctl add-flow br0 "table=0,priority=10,actions=drop"
+
+ovs-ofctl add-flow br0  -O openflow13 "table=0,priority=1001,dl_src=d6:77:b3:e7:15:c2,dl_dst=ff:ff:ff:ff:ff:ff,dl_type=0x0806,actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:76:66:55:44:33:22->eth_src,IN_PORT"
+
+sudo ovs-vsctl set-fail-mode br0 secure
+
+
+//server
+sudo iptables -F
+sudo setenforce Permissive
+service httpd restart
+chkconfig  httpd on
+service iptables stop
+chkconfig iptables off
+
+//compute
+sudo ifconfig tap-metadata 169.254.169.254/32
+sudo setenforce Permissive
+serice openvswitch restart
+chkconfig  openvswitch on
+service iptables stop
+chkconfig iptables off
+
+//jd
+nova boot --flavor m1.tiny --image e2fb6555-d3ed-4555-9af5-1e4d762f0cfa --vpc 274a9ebf-a4ad-4313-bcad-97fafeefac10 --nic net-id=12ff673c-1998-44ed-b986-499497909205 dxf_vm1 --security-groups 3461c71c-5d2f-44e4-bb76-172699d5e983
+
+
+nova --debug  boot --flavor 1 --availability-zone nova --admin-pass '9ol.0p;/' --image $WIN_IMAGE  --nic net-id=$SUBNET_ID --vpc $VPC_ID --security-groups $SG_ID ${1}
+
+//dragonflow
+nova boot --flavor cirros-2 --image ac9bd421-7386-4f6d-8015-a837e9a3d09f  --nic net-id=418fa469-7a86-4366-82da-202cb00ea377 vm1 --security-groups b563064a-51db-4b91-928c-a054f3960f89
+
+//test
+nova boot --flavor m1.medium --image e1014f21-9969-4cba-aea6-054fcb984eb0 --vpc vpc-e5fto7f6xm  
+
+
+openflow_v4.type !=0 && openflow_v4.type !=1&& openflow_v4.type !=2 && openflow_v4.type !=3 && openflow_v4.type !=14 
+
+
+
+
+//vrmonitor-lixuan
+ovs-ofctl add-flow br0  -O openflow13 "table=0,priority=2001,in_port=0,dl_src=22:33:44:55:66:77,dl_dst=77:66:55:44:33:22,dl_type=0x88cd,actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:77:66:55:44:33:22->eth_src,goto_table:1"
+
+
+//compute: OK-request
+ovs-ofctl add-flow br0  -O openflow13 "table=0, priority=4000,dl_src=77:66:55:44:33:22,dl_dst=22:33:44:55:66:77,dl_type=0x88cd actions=CONTROLLER:65535"
+
+#VR: OK-replay
+ovs-ofctl add-flow br0  -O openflow13 "table=0,priority=2001,dl_src=22:33:44:55:66:77,dl_dst=77:66:55:44:33:22,dl_type=0x88cd,actions=move:NXM_OF_ETH_SRC[]->NXM_OF_ETH_DST[],set_field:77:66:55:44:33:22->eth_src,IN_PORT"
+ovs-ofctl dump-flows br0  -O openflow13
+
+
+ovs-ofctl del-flows br0  -O openflow13 "table=0"
+ovs-ofctl dump-flows br0  -O openflow13
+
+
+
+sed -i "s/log.Debugf/\/\/log.Debugf/g" app/vrmonitor/vrmonitor.go
+sed -i "s/log.Infof/\/\/log.Infof/g" app/vrmonitor/vrmonitor.go
+
+
+
+alias jd='cd /home/jstack/src/jd.com/cc/jstack-controller'
+alias run="./templar /etc/cc_controller/compute.json"
+alias log="tailf /var/log/cc_controller/cc_controller.log"
+alias build="go build templar.go"
+
+alias dumpflows='sudo ovs-ofctl dump-flows br0 -O openflow13'
+alias dumpgroups='sudo ovs-ofctl dump-groups br0 -O Openflow13'
+alias listports="sudo ovs-vsctl -- --columns=name,ofport list Interface"
+alias snoop="sudo ovs-ofctl snoop br0"
+alias delflows='sudo ovs-ofctl del-flows br0 -O openflow13'
+
+ovs-dpctl dump-flows
+watch -n 1 -d "ovs-appctl bridge/dump-flows br0 | sed -e 's/duration=[^,]*,//g' | grep drop"
+watch -n 1 -d "ovs-ofctl dump-flows br0 -O openflow13 | grep -v "n_packets=0" | grep -v "OFPST_FLOW" | sed -e 's/duration=[^,]*,//g'"
+watch -n 1 -d "ovs-appctl bridge/dump-flows br0 | grep -v "n_packets=0" | sed -e 's/duration=[^,]*,//g'"
+watch -n 1 -d "ovs-ofctl dump-flows -O openflow13 br0 | grep -v "n_packets=0" |grep -v "OFPST_FLOW"| sed -e '/NXST_FLOW/d' -e 's/\(duration\)=[^,]*,//g' -e 's/send_flow_rem//g'"
+watch -n 1 -d "ovs-ofctl dump-group-stats br0 -O openflow13 | grep -v "packet_count=0" | sed -e 's/duration=[^,]*,//g'"
+
+
+ovs-ofctl dump-group-stats br0 -O openflow13
+
+#tunnel tx/rx 
+watch -n 1 -d "ovs-ofctl dump-ports br0"
+
+#dumpflows
+ovs-ofctl dump-flows -O openflow13 br0 | sed -e '/NXST_FLOW/d' -e 's/\(idle\|hard\)_age=[^,]*,//g' -e 's/\(duration\|n_packets\|n_bytes\)=[^,]*,//g'
+
+
+ovs-ofctl dump-flows -O openflow13 br0 | sed -e '/NXST_FLOW/d' -e 's/\(idle\|hard\)_age=[^,]*,//g' -e 's/\(duration\|n_packets\|n_bytes\|cookie\)=[^,]*,//g' -e 's/send_flow_rem//g'
+
+
+
+
+NAME=dhclient
+kill -9 `ps -ef|grep $NAME|grep -v grep|awk '{print $2}'`
+ps -ef|grep ^$NAME|grep -v grep|awk '{print $2}'|xargs kill -9
+
+
+create database cc;
+grant all privileges on cc.* to cc@'localhost' identified by 'CC_DBPASS';
+flush privileges;
+
+mysqld_safe --skip-grant-tables &
+
+mysql -u root mysql
+
+mysql> UPDATE user SET password=PASSWORD("new password") WHERE user='root';
+
+mysql> FLUSH PRIVILEGES;
+
+mysql> CREATE USER 'cc'@'%localhost' IDENTIFIED BY 'CC_DBPASS'; 
+mysql> CREATE USER 'cc'@'%192.168.8.139' IDENDIFIED BY 'CC_DBPASS'; 
+mysql> CREATE USER 'cc'@'%' IDENTIFIED BY 'CC_DBPASS'; 
+mysql> CREATE USER 'cc'@'%' IDENTIFIED BY ''; 
+mysql> CREATE USER 'cc'@'%'; 
+
+mysql> grant all cc to test@'192.168.8.131' identified by 'test';
+mysql> grant all privileges on *.* to root@192.168.8.131 identified by '123456';
+mysql> grant all privileges on *.* to root@192.168.8.1 identified by '123456';
+
+mysql> drop database cc;
+mysql> drop user cc;
+
+
+#dumpflows
+ovs-ofctl dump-flows -O openflow13 br0 | sed -e '/NXST_FLOW/d' -e 's/\(idle\|hard\)_age=[^,]*,//g' -e 's/\(duration\|n_packets\|n_bytes\)=[^,]*,//g'
+watch -n 1 -d "ovs-ofctl dump-flows -O openflow13 br0 | grep -v "n_packets=0" | sed -e '/NXST_FLOW/d' -e 's/\(duration\)=[^,]*,//g' -e 's/send_flow_rem//g'"
+
+#Outpurt
+/bin/sh -c /usr/bin/vrouter /etc/vrouter/config.json >/export/Logs/vrouter/vrouter.log 2>&1
+/bin/sh -c /usr/bin/cc_router /etc/cc_router/config.json >/export/Logs/cc_router/cc_router.log 2>&1
+env GOTRACEBACK=crash nohup /usr/local/bin/cc_controller /etc/cc_controller/compute.json  >/var/log/cc_controller/app.log 2>&1 & disown
+
+
+#抓取vni=10的包
+#首开智慧社ip：221.216.144.123
+tcpdump -i any port 4789 and udp[14:1]=0x0a
+tcpdump -i any port 4789 and udp[14:1]=0x0a -envvvXl | grep -i icmp
+tcpdump -i any port 4789 and udp[14:1]=0x19 -en -c 100 -vvvxx
+
+tcpdump -i any  port 4789 -l -nnn -vvv -X -e
+
+#抓取HTTP请求
+tcpdump -ni any tcp port 8080 -s 0 -A
+
+#create schema
+ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema
+ 
+
+#start ovs
+#/usr/local/share/openvswitch/scripts/ovs-ctl stop
+
+# Stop existing OVS processes. kill -9 works too.
+/usr/local/share/openvswitch/scripts/ovs-ctl stop
+# Start ovsdb-server w/ debugging enabled.
+ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock  \
+  --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+  --private-key=db:Open_vSwitch,SSL,private_key  \
+  --certificate=db:Open_vSwitch,SSL,certificate     \
+  --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert  \
+  --log-file=/var/log/openvswitch/ovs-vswitchd.log \
+  -vsyslog:dbg -vfile:dbg  --pidfile --detach
+ 
+ovs-vswitchd -v --pidfile --detach \
+ --log-file=/var/log/openvswitch/ovs-vswitchd.log \
+ -vconsole:err -vsyslog:info -vfile:info
+ 
+ 
+ovs-vsctl --no-wait init
+ 
+tail -f /var/log/ovsdb-*.log
+
+
+#下载rpm包，不安装
+sudo yum install --downloadonly --downloaddir=/tmp netperf
+
+#hping3 syn flood
+hping3 -q -n -a 192.168.100.4  -S -s 12356 --keep -p 3456 --flood 100.64.4.1
+
+#hping3 icmp flood
+hping3 -q -n -a 192.168.1.3  --id 0 --icmp -d 56 --flood 192.168.1.4
+
+#hping3 udp flood
+hping3 -q -n -a 192.168.1.3  --udp -s 53 --keep -p 68 --flood 192.168.1.4
+
+#start service
+env GOTRACEBACK=crash /usr/local/bin/cc_controller /etc/cc_controller/controller_config.json >/export/Logs/cc_controller/app.log 2>&1
+
+
+#vm interface up/down
+virsh domif-setlink 8c6d0081-b0b2-4ce8-98ad-e7be6f7804af port-jy3qtei55b down
+virsh domif-setlink 8c6d0081-b0b2-4ce8-98ad-e7be6f7804af port-jy3qtei55b up
+
+#yum download rpm pkg
+yum -y install yum-utils*
+yumdownloader iperf hing3
+
+
+
+
+

@@ -30,7 +30,7 @@ systemctl disable irqbalance.service
 # warning: restart host, config loss
 # NIC RSS, update underlay nic vxlan hash policy, 4 tuple hash, include sip, dip, sport and dport for flow
 #check
-ethtool -N ${UNDERLAY_NIC_NAME} rx-flow-hash udp4
+ethtool -n ${UNDERLAY_NIC_NAME} rx-flow-hash udp4
 #temp set
 ethtool -N ${UNDERLAY_NIC_NAME} rx-flow-hash udp4 sfdn
 
@@ -178,8 +178,9 @@ echo "sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=600">>/e
 echo "sysctl -w net.ipv4.netfilter.ip_conntrack_generic_timeout=120">>/etc/sysctl.conf
 sysctl -p
 
-# warning: restart host, config loss
+mkdir /etc/modprobe.d/ > /dev/null
 echo "500224" > /sys/module/nf_conntrack/parameters/hashsize
+echo 'options nf_conntrack hashsize=500224'>>/etc/modprobe.d/nf_conntrack.conf
 
 
 
@@ -198,6 +199,11 @@ echo "RuntimeMaxUse=648K" >> /etc/systemd/journald.conf
 echo "MaxLevelStore=err">> /etc/systemd/journald.conf
 systemctl restart systemd-journald
 fi
+
+#openvswitch max open file-max
+echo "102400" > /proc/$(pidof ovs-vswitchd)/limits
+cat /proc/$(pidof ovs-vswitchd)/limits | grep open
+cat  /etc/security/limits.conf  | grep -v "^#" 
 
 #start the mode of ovs match flow, ovs default enable megaflows
 #warning: restart ovs, config loss
