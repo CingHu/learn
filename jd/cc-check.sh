@@ -22,12 +22,14 @@ CONTROLLER_CONFIG="export CCC_CONFIG_FILE=/etc/cc_controller/controller_config.j
 INATCONTROLLER_CONFIG="export CCC_CONFIG_FILE=/etc/cc_controller/inat.json"
 #CHECKOPTION="compute"
 
+ERRORS=""
+
 
 function perror()
 {
     echo -e "${RED} ===============================Error=================================== ${NC}"
     echo -e "${RED} Error: $@ ${NC}"
-    clean
+    ERRORS="${ERRORS}\n ${RED} Error: $@ ${NC}\n"
     exit 1
 }
 
@@ -35,7 +37,6 @@ function pnerror()
 {
     echo -e "${RED} ===============================Error=================================== ${NC}"
     echo -e "${RED} Error: $@ ${NC}"
-    clean
 }
 
 function pinfo()
@@ -50,8 +51,7 @@ function pcheck()
 
 function clean()
 {
-    return
-    if [ -f $PATHINFO ];then
+    if [ -d $PATHINFO ];then
         rm -rf $PATHINFO
     fi
 }
@@ -75,6 +75,7 @@ function encomparestr()
     if [ "$2" != "$3" ];then
         pnerror "$1"
     fi
+
 }
 
 function check_str_null()
@@ -101,7 +102,7 @@ function help_usage()
      echo -e "\t-f:         floatingip address"
      echo -e "\t-p:         special ping ip adddress, example 8.8.8.8,114.114.114.114"
      echo -e "\t-c:         special ping count, default 1"
-     echo -e "\t-o:         check controler runtime data, default none, current suppport, compute, inat, all"
+     echo -e "\t-o:         check controller runtime data, default none, current suppport, compute, inat, all"
      echo -e "\t-h:         help info"
 
      echo ""
@@ -250,7 +251,7 @@ function check_server_floatingip()
     #sshcmd ccs floatingip-show -a $FIPID > "$PATHINFO/fip"
     ccs floatingip-show -a $FIPID > "$PATHINFO/fip"
     ADMINSTATUS=$(cat $PATHINFO/fip | grep admin_status_up | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
-    ncomparestr "admin status of floatingip $FLOATINGIP is false" $ADMINSTATUS "true"
+    ncomparestr "admin status of floatingip $FLOATINGIP is $ADMINSTATUS" $ADMINSTATUS "true"
     pinfo "admin status of fip $FLOATINGIP is $ADMINSTATUS"
 
     SUBNETID=$(cat $PATHINFO/fip | grep -w subnet_id | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
@@ -269,6 +270,16 @@ function check_server_sg()
     fi
 }
 
+function check_server_inat_sg()
+{
+    pcheck "================== cc-server inat floatingip security group ========================"
+    if [ "$INATINTIP" != "" ];then
+        python /home/dev/sdn_net_tool/sdn_check/main.py security-check --tenant_id $TENANTID --floatingip $INATINTIP
+        python /home/dev/sdn_net_tool/sdn_check/main.py vr-check --tenant_id $TENANTID --floatingip $INATINTIP
+    else
+        pinfo "port $INATPORTID may not bind floatingip"
+    fi
+}
 function show_server_port_sgs()
 {
     for sg in `echo $1 | sed -e "s/\,/\ /g"`
@@ -287,7 +298,7 @@ function check_server_port()
     ccs port-show -a $PORTID > "$PATHINFO/port"
     PORTSTATUS=$(cat $PATHINFO/port | grep -w State | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
     exit_str_null "state of port $PORTID is null" $PORTSTATUS
-    ncomparestr "state of port $PORTID is false" $PORTSTATUS "up"
+    ncomparestr "state of port $PORTID is down" $PORTSTATUS "up"
     pinfo "state of port $PORTID is $PORTSTATUS"
 
     VMID=$(cat $PATHINFO/port | grep -w DeviceId | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
@@ -349,12 +360,12 @@ function check_server_host()
 
     HOSTADMINSTATUS=$(cat $PATHINFO/host | grep -w AdminStatus | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
     exit_str_null "admin status of $HOSTTYPE host $CHECKHOSTID is null" $HOSTADMINSTATUS
-    ncomparestr "admin status of $HOSTTYPE host $CHECKHOSTID is false" $HOSTADMINSTATUS "up"
+    ncomparestr "admin status of $HOSTTYPE host $CHECKHOSTID is $HOSTADMINSTATUS" $HOSTADMINSTATUS "up"
     pinfo "admin status of $HOSTTYPE host $CHECKHOSTID for $PORTID is $HOSTADMINSTATUS"
 
     HOSTSTATUS=$(cat $PATHINFO/host | grep -w Status | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
     exit_str_null "status of $HOSTTYPE host $CHECKHOSTID is null" $HOSTSTATUS
-    ncomparestr "status of $HOSTTYPE host $CHECKHOSTID is false" $HOSTSTATUS "up"
+    ncomparestr "status of $HOSTTYPE host $CHECKHOSTID is $HOSTSTATUS" $HOSTSTATUS "up"
     pinfo "status of $HOSTTYPE host $CHECKHOSTID for $PORTID is $HOSTSTATUS"
     echo -e "\n\n"
 }
@@ -366,6 +377,20 @@ function check_server_subnet_acl()
     cat $PATHINFO/acl
 }
 
+function check_server_subnet_rtabble()
+{
+    local RTID=$1
+    local SUBNET=$2
+    pcheck "================ cc-server router table $RTID info ============"
+    ccs route-list -a $RTID > "$PATHINFO/rtable"
+    cat $PATHINFO/rtable |grep "rt-" |sed -e "s/|//g" 
+
+    RTDETAIL=$(cat $PATHINFO/rtable| grep "0.0.0.0/0" | grep -w internet | sed -e "s/|//g" -e 's/  \+/ /g' )
+    check_str_null "internet route table of subnet $SUBNET is null" $RTDETAIL
+    pinfo "internet route table of $SUBNET : $RTDETAIL"
+    echo -e "\n\n"
+    
+}
 function check_server_subnet()
 {
     pcheck "================ cc-server subnet $SUBNETID info ============"
@@ -380,6 +405,7 @@ function check_server_subnet()
     exit_str_null "gwmac of subnet $SUBNETID for $PORTID is null" $GWMAC
     pinfo "gwmac of subnet $SUBNETID for $PORTID is $GWMAC"
 
+
     ACL=$(cat $PATHINFO/subnet| grep -w acl_id| awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
     if [ "$ACL" == "" ];then
         pinfo "acl of subnet $SUBNETID for $PORTID is null"
@@ -388,7 +414,13 @@ function check_server_subnet()
         check_server_subnet_acl
     fi
 
+    RTABLE=$(cat $PATHINFO/subnet| grep -w route_table_id | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
+    exit_str_null "router table id of subnet $SUBNETID for $PORTID is null" $RTABLE
+    pinfo "router table id of subnet $SUBNETID for $PORTID is $RTABLE"
+
     echo -e "\n\n"
+    check_server_subnet_rtabble $RTABLE $SUBNETID
+
 }
 
 function check_server_inatport()
@@ -491,6 +523,7 @@ function check_server_inatport_floatingip()
     comparestr "bandwidthout of inat port $INATPORTID is  zero" $INATINTBWOUT 0
     pinfo "bandwidthout of inat port $INATPORTID is ${INATINTBWOUT} Mb"
     echo -e "\n\n"
+
 }
 
 function compare_port()
@@ -511,10 +544,36 @@ function check_server_nova()
     VMEXIST=$(cat $PATHINFO/vm | grep -w port_id)
     exit_str_null "vm $VMID is not exist" ${VMEXIST}
 
+    VMVPCID=$(cat $PATHINFO/vm | grep -w vpc_id | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    check_str_null "vpc id of vm $VMID is null" $VMVPCID
+    pinfo "vpc of vm $VMID is $VMVPCID"
+
+    VMNAME=$(cat $PATHINFO/vm | grep -w name | awk -F"|" '{print $3}')
+    pinfo "name of vm $VMID is ${VMNAME}"
+
+    VMFLAVOR=$(cat $PATHINFO/vm | grep -w flavor | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    pinfo "flavor of vm $VMID is $VMFLAVOR"
+
+    VMMETADATA=$(cat $PATHINFO/vm | grep -w metadata| awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    pinfo "metadata of vm $VMID is $VMMETADATA"
+
+    VMZONE=$(cat $PATHINFO/vm | grep -w availability_zone | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    pinfo "availability zone of vm $VMID is $VMZONE"
+
     VMSTATUS=$(cat $PATHINFO/vm | grep -w status | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
     check_str_null "status of vm $VMID is null" $VMSTATUS
-    ncomparestr "status of vm $VMID is $VMSTATUS" $VMSTATUS "active"
+    ncomparestr "status of vm $VMID is $VMSTATUS" $VMSTATUS "active" "cat $PATHINFO/vm"
     pinfo "status of vm $VMID is $VMSTATUS"
+
+    VMTASKSTATUS=$(cat $PATHINFO/vm | grep -w task_state | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    check_str_null "task status of vm $VMID is null" $VMTASKSTATUS
+    encomparestr "task status of vm $VMID is $VMTASKSTATUS" $VMTASKSTATUS "-"
+    pinfo "task status of vm $VMID is $VMTASKSTATUS"
+
+    VMPOWERSTATUS=$(cat $PATHINFO/vm | grep -w power_state | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g"| tr '[A-Z]' '[a-z]')
+    check_str_null "power status of vm $VMID is null" $VMPOWERSTATUS
+    encomparestr "power status of vm $VMID is $VMTASKSTATUS" $VMPOWERSTATUS "1"
+    pinfo "power status of vm $VMID is $VMPOWERSTATUS"
 
     NOVAPORTID=$(cat $PATHINFO/vm | grep -w port_id| awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
     exit_str_null "portid of vm $VMID is null" $NOVAPORTID
@@ -524,12 +583,14 @@ function check_server_nova()
     exit_str_null "hostip of vm $VMID is null" $NOVAHOSTIP
     pinfo "hostip of vm is $NOVAHOSTIP"
 
-    NOVAPORTID=$(cat $PATHINFO/vm | grep -w port_id| awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
-    exit_str_null "portid of vm $VMID is null" $NOVAPORTID
-    pinfo "portid of vm is $NOVAPORTID"
-
     NOVAIPS=$(cat $PATHINFO/vm | grep -w network| awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
     exit_str_null "ips of vm $VMID is null" $NOVAIPS
+
+    VMIMAGE=$(cat $PATHINFO/vm | grep -w image | awk -F"|" '{print $3}' | sed -e "s/\ //g" -e "s/\"//g")
+    pinfo "image of vm $VMID is $VMIMAGE"
+
+    VMVOLUMES=$(cat $PATHINFO/vm | grep volumes_attached | cut -d"|" -f3 | sed -e "s/\[//g" -e "s/\]//g" -e "s/\"//g" -e "s/}//g" -e "s/{//g" -e "s/id://g" -e "s/\ //g")
+    pinfo "attached volumes of vm $VMID is $VMVOLUMES"
 
     NOVAFIXEDIP=$(echo $NOVAIPS | cut -d"," -f1)
     NOVAFLOATINGIP=$(echo $NOVAIPS | cut -d"," -f2)
@@ -540,6 +601,7 @@ function check_server_nova()
     if [ "$NOVAFLOATINGIP" != "" ];then
         pinfo "floatingip of vm $VMID is $NOVAFLOATINGIP" 
     fi
+
     echo -e "\n\n"
 }
 
@@ -568,6 +630,7 @@ function check_floatingip()
        check_compute_controller
    fi
    if [ "$CHECKOPTION" == "inat" -o "$CHECKOPTION" == "all" ];then
+        show_iptables_rule
         check_inat_controller
    fi
 }
@@ -598,6 +661,14 @@ function check_vm()
    if [ "$CHECKOPTION" == "inat" -o "$CHECKOPTION" == "all" ];then
         check_inat_controller
    fi
+}
+
+function show_iptables_rule()
+{
+
+    pcheck "================ cc-controller inat $INATPORTID host iptable rules ============"
+    sinatcmd ip netns exec $INATPORTID iptables-save
+    echo -e "\n\n"
 }
 
 function check_inat_controller()
@@ -701,7 +772,10 @@ main()
     if [ "$VMID" != "" -a "$VMFLAG" == "1" ];then
         check_vm
     fi
-
+    echo -e "\n\n"
+    echo -e ${ERRORS}
 }
 
 main $*
+
+#tcpdump -i any -nnvv 'icmp[icmptype]==0'

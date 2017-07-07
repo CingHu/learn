@@ -264,4 +264,7 @@ git pull
 git fetch ssh://xxxx refs/changes/46/28146/1 && git cherry-pick FETCH_HEAD
 git push gerrit:xxxxxx HEAD:refs/for/xxxxxx
 
+No.43 查看两个tag之间的commit
+git log --pretty=oneline tagA..tagB
+
 
