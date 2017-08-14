@@ -134,12 +134,27 @@ function get_inport()
         exit 1
     fi
 }
+
+function get_inport_mac()
+{
+    MAC=$(ovs-vsctl get interface ${INPORT_NAME} external_ids:attached-mac | sed -e "s/\"//g" -e "s/\ //g")
+    if [ $? != 0 ]; then
+        echo "ERROR, get port mac fail"
+        exit 1
+    fi
+    if [ "${MAC}" == "" ]; then
+        echo "ERROR, can not find mac"
+        exit 1
+    fi
+}
+
 function add_drop_flow_rule()
 {
     get_inport
+	get_inport_mac
     get_last_cookie
     #add drop ip packet
-    sudo ovs-ofctl ${OF13} add-flow ${BR_NAME} cookie=$COOKIE,table=${DROP_TABLE},priority="$PRIORITY",in_port="$INPORT",ip,nw_dst="$DSTIP",actions=drop
+    sudo ovs-ofctl ${OF13} add-flow ${BR_NAME} cookie=$COOKIE,table=${DROP_TABLE},priority="$PRIORITY",dl_src="$MAC",ip,nw_dst="$DSTIP",actions=drop
     if [ $? = 0 ];then
          echo -e "${TYPE}:${COOKIE}:${DSTIP}" >> ${FLOW_FILE}
          echo "${COOKIE}:${DSTIP}"

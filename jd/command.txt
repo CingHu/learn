@@ -38,10 +38,10 @@ ovs-vsctl list interface $TAPNAME
 tap:
 
 compute1:
-TAPNAME="port-ougdw5m7du"
-MAC="fa:16:3e:bb:38:ff"
-IPADDR="192.168.1.3/24"
-DEFAULT_GW="192.168.1.1"
+TAPNAME="port-7dz4wrpefy"
+MAC="fa:16:3e:97:e1:14"
+IPADDR="172.16.10.3/24"
+DEFAULT_GW="172.16.10.1"
 NS_NAME=$TAPNAME
 
 compute2:
@@ -110,7 +110,7 @@ DEFAULT_GW="172.16.0.1"
 NS_NAME=$TAPNAME
 
 
-TAPNAME="port-brvigvjk4d"
+TAPNAME="port-7dz4wrpefy"
 MAC="fa:16:3e:0d:19:a8"
 IPADDR="192.168.1.4"
 DEFAULT_GW="192.168.1.1"
@@ -365,6 +365,7 @@ tail -f /var/log/ovsdb-*.log
 
 #下载rpm包，不安装
 sudo yum install --downloadonly --downloaddir=/tmp netperf
+yumdownloader  hping3
 
 #hping3 syn flood
 hping3 -q -n -a 192.168.100.4  -S -s 12356 --keep -p 3456 --flood 100.64.4.1
@@ -377,7 +378,7 @@ hping3 -q -n -a 192.168.1.3  --udp -s 53 --keep -p 68 --flood 192.168.1.4
 
 #start service
 env GOTRACEBACK=crash /usr/local/bin/cc_controller /etc/cc_controller/controller_config.json >/export/Logs/cc_controller/app.log 2>&1
-
+/bin/sh -c env GOTRACEBACK=crash /usr/local/bin/cc_controller /etc/cc_controller/controller_config.json >/export/Logs/cc_controller/app.log 2>&1
 
 #vm interface up/down
 virsh domif-setlink 8c6d0081-b0b2-4ce8-98ad-e7be6f7804af port-jy3qtei55b down
@@ -400,5 +401,32 @@ date -d "$(awk -F. '{print $1}' /proc/uptime) second ago" +"%Y-%m-%d %H:%M:%S"
 
 
 ps -eLo ruser,pid,ppid,lwp,psr| grep -w $(ps -ef|grep NUMA_Awareness_test_2 | grep -v grep | awk '{print $2}')
+
+#grep 或
+grep -E "qaz|wsx"
+grep "qaz\|wsx"
+grep -e qaz -e wsx
+
+#window netsh
+netsh interface ipv4 dump
+netsh interface ipv4 show interfaces
+netsh interface ipv4 show interfaces level=verbose
+netsh interface ipv4 show subinterfaces level=verbose
+
+#ovs
+
+#统计文件大小
+du -ah --max-depth=1
+
+#kill ovs
+sudo ps -ef|grep ovs | grep -v grep | awk '{print $2}'|xargs -i sudo kill -9 {}
+
+#windows
+netsh interface ipv4 dump
+netsh interface ipv4 show interfaces
+netsh interface ipv4 show interfaces level=verbose
+netsh interface ipv4 show neighbors
+
+
 
 
