@@ -6,7 +6,7 @@ fi
 i=1
 
 if [[ $1 == $i ]];then
-watch -n 1 -d "ovs-appctl bridge/dump-flows br0 | sed -e 's/duration=[^,]*,//g' | grep goto_table:200"
+watch -n 1 -d "ovs-appctl bridge/dump-flows br0 | sed -e 's/duration=[^,]*,//g' | grep drop"
 fi
 
 ((i+=1))

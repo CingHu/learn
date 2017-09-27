@@ -4,13 +4,15 @@ function file_check ()
 {
     CCC_CONFIG=`echo $CCC_CONFIG_FILE`
     CC=`echo $CCC`
-    if [ ! -f  $CCC_CONFIG ];then
-        CCC_CONFIG="/etc/cc_controller/controller_config.json"
+    if [ ! -f  "$CCC_CONFIG" ];then
+        export CCC_CONFIG="/etc/cc_controller/controller_config.json"
     fi
     
     if [ ! -f  "$CCC_CONFIG" ];then
         EError "Please define CCC_CONFIG_FILE environment variable, example: export CCC_CONFIG_FILE=/etc/cc_controller/compute.json"
     fi
+
+    export CCC_CONFIG_FILE=$CCC_CONFIG
 
     if [ ! -f "$CC" ];then
         CC="/usr/local/bin/ccc"
@@ -27,7 +29,7 @@ function file_check ()
 VSCTL="ovs-vsctl"
 DPCTL="ovs-dpctl"
 APPCTL="ovs-appctl"
-OFCTL="ovs-ofctl -O openflow13"
+OFCTL="ovs-ofctl -O openflow13 --color=auto"
 BRIDGE="br0"
 
 
@@ -53,9 +55,12 @@ function init_env()
     VNIHEX=""
     GWMAC=""
     GWIP=""
+    DHCPMAC=""
+    DHCPIP=""
     PORTMAC=""
     PORTIP=""
-    VR=""
+    INGRESSVR=""
+    EGRESSVR=""
     PORTINFO="/tmp/$PORTID"
     SUBNETINFO="/tmp/$SUBNETINFO"
 }
@@ -115,7 +120,6 @@ function init_cache()
         local subnet
 
         Info "[subnet] get subnet info from cc_controller"
-        exec `$CCCRUDETAILCMD > $CCCURDETAIL`
         subnet=$(cat $CCCURDETAIL|grep subnet-| wc -l)
         if [ $subnet == 0 ];then
             EError "get curdetail cache fail from cc_controller"
@@ -150,7 +154,7 @@ function Info()
 
 function write_portinfo()
 {
-        Info "get port info from cc_controller"
+        Info "[system] get port info from cc_controller"
         echo > $PORTINFO
         `cat $CCCURDETAIL | grep -i $PORTID -A 100 | grep  -E "securitygroupIds" -m1 -B 100` > $PORTINFO
         local count=$(cat $PORTINFO | wc -l)
@@ -174,29 +178,44 @@ function get_subnet_param()
 
         metadata=$(cat $CCCURDETAIL | grep $SUBNETID -A 20 | grep metadata | cut -d":" -f2 | sed 's/[ ]//g' | sed 's/\,//g')
         VNI=$(cat $CCCURDETAIL | grep $SUBNETID -A 20 | grep -wi vni | cut -d":" -f2 | sed 's/[ ]//g' | sed 's/\,//g')
-        VR=$(cat $CCCURDETAIL | grep $SUBNETID -A 20| sed -e "s/\"//g" -e "s/]//g" -e "s/\[//g" -e "s/\ //g" -e "s/\,//g" | sed 's/[[:alpha:]]//g'| grep '^[[:digit:]]*\.')
+        EGRESSVR=$(cat $CCCURDETAIL | grep $SUBNETID -A 20| grep globalRouters -B 10 | sed -e "s/\"//g" -e "s/]//g" -e "s/\[//g" -e "s/\ //g" -e "s/\,//g" | sed 's/[[:alpha:]]//g'| grep '^[[:digit:]]*\.')
+        INGRESSVR=$(cat $CCCURDETAIL | grep $SUBNETID -A 20| grep globalRouters -A 10 | sed -e "s/\"//g" -e "s/]//g" -e "s/\[//g" -e "s/\ //g" -e "s/\,//g" | sed 's/[[:alpha:]]//g'| grep '^[[:digit:]]*\.')
 
         METADATAHEX=$(echo "0x"`echo "obase=16;${metadata}"|bc`)
         VNIHEX=$(echo "0x"`echo "obase=16;${VNI}"|bc`)
 
         GWMAC=$(cat $SUBNETINFO | sed -n '/gatewayPorts/,/securitygroupIds/p' | grep mac | head -n 1 | sed -e "s/\ //g" -e "s/\"//g" -e "s/mac://g")
         GWIP=$(cat $SUBNETINFO | sed -n '/gatewayPorts/,/securitygroupIds/p' | grep fixedip | head -n 1 | sed -e "s/\ //g" -e "s/\,//g" -e "s/\"//g" -e "s/fixedip://g")
+
+        DHCPMAC=$(cat $SUBNETINFO | sed -n '/dhcpPort/,/securitygroupIds/p' | grep mac | head -n 1 | sed -e "s/\ //g" -e "s/\"//g" -e "s/mac://g")
+        DHCPIP=$(cat $SUBNETINFO | sed -n '/dhcpPort/,/securitygroupIds/p' | grep fixedip | head -n 1 | sed -e "s/\ //g" -e "s/\,//g" -e "s/\"//g" -e "s/fixedip://g")
  
         exit_str_null "vni of $SUBNETID is null" $VNI
         exit_str_null "metadata of $SUBNETID is null" $metadata
         exit_str_null "gwmac of $SUBNETID is null" $GWMAC
         exit_str_null "gwip of $SUBNETID is null" $GWIP
+        exit_str_null "dhcpmac of $SUBNETID is null" $DHCPMAC
+        exit_str_null "dhcpip of $SUBNETID is null" $DHCPIP
 
         Info "[subnet] vni of subnet $SUBNETID is $VNIHEX"
         Info "[subnet] metadata of subnet $SUBNETID is $METADATAHEX"
         Info "[subnet] gwmac of subnet $SUBNETID is $GWMAC"
         Info "[subnet] gwip of subnet $SUBNETID is $GWIP"
-        if [ "$VR" == "" ];then
-            EError "[subnet] vr of subnet $SUBNETID is null"
+        Info "[subnet] dhcpmac of subnet $SUBNETID is $DHCPMAC"
+        Info "[subnet] dhcpip of subnet $SUBNETID is $DHCPIP"
+        if [ "$INGRESSVR" == "" ];then
+            Error "[subnet] ingress vr of subnet $SUBNETID is null"
         fi
-        for vr in $VR
-        do 
-        Info "[subnet] vr of subnet $SUBNETID is $vr"
+        if [ "$EGRESSVR" == "" ];then
+            Error "[subnet] egress vr of subnet $SUBNETID is null"
+        fi
+        for vr in `echo $INGRESSVR | sed "s/\ /\\n/g"`
+        do
+            Info "[subnet] ingress vr of subnet $SUBNETID is $vr"
+        done
+        for vr in `echo $EGRESSVR | sed "s/\ /\\n/g"`
+        do
+            Info "[subnet] egress vr of subnet $SUBNETID is $vr"
         done
 }
 
@@ -204,13 +223,13 @@ function ping_check()
 {
     local r=""
 
-    r=`ping -i 0.1 -c 5 -W 1 $1 | grep 'packet loss' | awk -F'packet loss' '{ print $1 }' | awk '{ print $NF }' | sed 's/%//g'`
+    r=`ping -i 0.1 -c 5 -W 1 -I $UNDERLAYIP $1 | grep 'packet loss' | awk -F'packet loss' '{ print $1 }' | awk '{ print $NF }' | sed 's/%//g'`
     if [ "${r}" != "0" ];then
-         Error "ping $1 failed"
+         Error "[port] ping $1 failed"
          return
     fi
 
-    Info "can ping $1, result is OK"
+    Info "[port] can ping $1, result is OK"
 }
 
 function checkout_vxlan_host_status()
@@ -220,11 +239,11 @@ function checkout_vxlan_host_status()
 
 function check_vr_host()
 {
-        for vr in $VR
+        for vr in `echo $INGRESSVR $EGRESSVR | sed "s/\ /\\n/g"`
         do
               local ofport=""
               ofport=$(get_vxlan_ofport $vr)
-              Info "ofport of vr tunnel vx$vr is $ofport"
+              Info "[port] ofport of vr tunnel vx$vr is $ofport"
               checkout_vxlan_host_status $vr
         done
 }
@@ -314,7 +333,7 @@ function check_port_host()
         if [ "$TYPE" == "1" ];then
             PORTHOSTOFPORT=$(get_vxlan_ofport $PORTHOST)
             PORTHOSTOFPORTHEX=$(echo "0x"`echo "obase=16;${PORTHOSTOFPORT}"|bc`)
-            Info "ofport of compute tunnel vx$PORTHOST is $PORTHOSTOFPORT"
+            Info "[port] ofport of compute tunnel vx$PORTHOST is $PORTHOSTOFPORT"
         fi
 }
 
@@ -356,24 +375,62 @@ function checkout_table_flow()
         Info "[flow_table] tableid $tableid, match $match: ${r}"
 }
 
+function check_lport_drop_flow()
+{
+        r=$(cat $DUMPGFLOWPATH | grep -e "in_port=$ofport," -e "in_port=$ofport " |grep "drop")
+        if [ "${r}" != "" ];then
+            Error "[flow_table] port $PORTID have drop flow: ${r}"
+        fi
+}
+
 function check_group_flow()
 {
         local groupid=$VNI
         local r=""
 
-        r=$(cat $DUMPGFLOWPATH | grep "group_id=$groupid,")
-        Info "group $groupid: $r"
+        r=$(cat $DUMPGFLOWPATH | grep "group_id=$groupid,"|grep "output")
+        Info "[port] group $groupid: $r"
         check_str_null "[flow_table] group $groupid: flow is not exist" $r
 }
 
 function check_subnet_flow()
 {
         #table=0, match=tun_id, ofport
-        for vr in $VR
+        for vr in `echo $INGRESSVR | sed "s/\ /\\n/g"`
         do
             ofport=$(get_vxlan_ofport $vr)
             checkout_table_flow 0 "tun_id=$VNIHEX,in_port=$ofport"
         done
+
+        #table=25, match=dhcpmac, dhcpip, metadata
+        checkout_table_flow 25 "metadata=$METADATAHEX,arp_tpa=$DHCPIP,$DHCPMAC"
+
+        #table=30, match=metadata,dhcpmac
+        checkout_table_flow 30 "metadata=$METADATAHEX, udp, $DHCPMAC"
+
+        #table=30, match=metadata, broadcast
+        checkout_table_flow 30 "metadata=$METADATAHEX, udp, ff:ff:ff:ff:ff:ff"
+
+}
+function check_lport_icmp_flow()
+{
+        for vr in `echo $INGRESSVR | sed "s/\ /\\n/g"`
+        do
+            local ofport=""
+            local ofporthex=""
+
+            ofport=$(get_vxlan_ofport $vr)
+            ofporthex=$(echo "0x"`echo "obase=16;${ofport}"|bc`)
+
+            #table=15, icmp, match=metatada, ct_mark, jump security group
+            checkout_table_flow 15 "metadata=$METADATAHEX,ct_mark=$ofporthex"
+
+            #table=60, match=metadata,icmp reply
+            checkout_table_flow 60 "metadata=$METADATAHEX,dl_dst=$GWMAC,ct_mark=$ofporthex,icmp_type=0,icmp_code=0"
+        done
+
+        #table=55, icmp, ingress vm
+        checkout_table_flow 55 "metadata=$METADATAHEX,dl_src=$GWMAC,nw_src=$GWIP,icmp_type=8,icmp_code=0"
 
 }
 
@@ -407,9 +464,6 @@ function check_lport_flow()
         #table=25, match=mac, ip, metadata
         checkout_table_flow 25 "metadata=$METADATAHEX,arp_tpa=$PORTIP,$PORTMAC"
 
-        #table=30, match=metadata
-        checkout_table_flow 30 "metadata=$METADATAHEX, udp"
-
         #table=40, match=vni,mac, metadata
         checkout_table_flow 40 "write_metadata:$METADATAHEX,$PORTMAC,tun_id=$VNIHEX"
 
@@ -430,13 +484,16 @@ function check_lport_flow()
 
         #vr, table=60, match=gwmac,metadata
         checkout_table_flow 60 "metadata=$METADATAHEX,$GWMAC"
+
+        #check icmp flow
+        check_lport_icmp_flow
 }
 
 function get_lport_info()
 {
         PORTMAC=$($VSCTL list Interface  $1 | grep external_ids | awk -F "attached-mac=" '{print $2}' | cut -d"," -f1|sed -e 's/\"//g')
         if [ "$PORTMAC" == "" ];then
-            Info "cannot find mac of $1 from ovsdb" $PORTMAC
+            Info "[port] cannot find mac of $1 from ovsdb" $PORTMAC
             PORTMAC=$(cat $PORTINFO|grep mac| head -n 1 | sed -e "s/\"//g" -e "s/\ //g" -e "s/mac://g")
         fi
         exit_str_null "cannot find mac of $1 from curdetail cache or ovsdb" $PORTMAC
@@ -445,6 +502,8 @@ function get_lport_info()
         PORTIP=`cat $PORTINFO | grep $PORTMAC -B 1 | grep fixedip | sed -e "s/\"//g" -e "s/\,//g" -e "s/\ //g" | cut -d ":" -f2`
         exit_str_null "cannot find ip of $1 from curdetail cache" $PORTIP
         Info "[port] ip of $1 is $PORTIP"
+        DEVICEID=`cat $PORTINFO | grep deviceId | sed -e "s/\"//g" -e "s/\,//g" -e "s/\ //g" | cut -d ":" -f2`
+        Info "[port] deviceid of $1 is $DEVICEID"
         
 }
 
@@ -465,14 +524,13 @@ function check_vm_ports()
     local port_names=""
     local vm=""
 
-    vm=$(ps -ef|grep -w $VMID | grep qemu-kvm)
-    exit_str_null "vm $VMID is not exist" $vm
+    port_names=$(cat $CCCURDETAIL | grep $VMID -B 2 | grep -wi id | awk '{print $2}' | sed -e "s/\"//g" -e "s/\,//g")
+    exit_str_null "[port] device $VMID is not exist" $port_names
 
-    port_names=$(virsh domiflist $VMID | grep "port-" | awk -F" " '{print $1}')
-    Info "ports of $VMID are: $port_names"
+    Info "[port] ports of $VMID are: $port_names"
     for port in  $port_names
     do
-        Info "check port: $port"
+        Info "[port] check port: $port"
         PORTID=$port
         check_port $port
         init_env 
@@ -526,6 +584,7 @@ check_port()
             check_port_cache $1
             get_ofport $PORTID
             check_vr_host
+            check_lport_drop_flow
             check_lport_flow
             check_group_flow
             printinfo 
@@ -542,6 +601,8 @@ check_port()
 main()
 {
     file_check
+
+    exec `$CCCRUDETAILCMD > $CCCURDETAIL`
 
     if [ $# -ne 2 ];then
          help_usage

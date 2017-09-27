@@ -1,30 +1,31 @@
-1. ovsping.sh
+1. ovsping.sh --> ovs-ping-check
 
 此脚本可以模拟VM发送ping包，在port上使用tcpdump(对于inat的port需要指定namespace)来检查是否收到icmp reply
 
 使用场景1: 向同子网的其他VM发送 ping
-sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:0d:19:a8 -w 192.168.1.5 -x 192.168.1.4
+root# ovs-ping-check -p port-abx98fm0ec  -d fa:16:3e:0d:19:a8 -w 192.168.1.5 -x 192.168.1.4
 
 使用场景2: 向网关发送ping
-sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 192.168.1.1
+root# ovs-ping-check -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 192.168.1.1
 
 使用场景3: 向floatingip发送ping
-sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 110.12.11.2
+root# ovs-ping-check -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 110.12.11.2
 
 使用场景4: 向inat的port发送ping
-sh  ovsping.sh -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 169.254.169.3
+root# ovs-ping-check -p port-abx98fm0ec  -d fa:16:3e:b0:93:20  -w 192.168.1.5 -x 169.254.169.3
 
-
-结果验证：如果出现如下信息表明ping ok，否则失败, 注意ping的id固定是5000， seq固定是5000
+结果验证：如果出现如下信息表明ping ok，否则失败, 注意ping的id是random的， seq也是random的
 "
 ====================== ping result ===============================
 reading from file port-1exxhsin4s.0.dmp, link-type EN10MB (Ethernet)
 06:42:39.659706 fa:16:3e:f8:1d:33 > fa:16:3e:67:a6:e6, IPv4, length 50: 172.16.1.3 > 172.16.1.9: ICMP echo reply, id 5000, seq 5000, length 16
 "
 
-2.jd_ovs_env_check.sh
+2.jd_ovs_env_check.sh --> ovs-env-check
 
 此脚本用于静态检查ovs的初始配置是否正确，一般情况下初始化安装compute 节点后，使用此脚本
+
+root# ovs-env-check
 
 check result:
 
@@ -55,22 +56,25 @@ Check: can ping 100.64.140.130, result is OK
 Check: ofport of vx100.64.140.78 is 54, result is OK
 Check: can ping 100.64.140.78, result is OK
 
-3. jd_ovs_runtime_check.sh
+3. jd_ovs_runtime_check.sh --> ovs-runtime-check
 
 此脚本可以检查当前的流表是否正确，是否有丢失的情况, underlay ip的连通情况等等，可以根据port_id检查，可以根据vm_id检查
 
-sh jd_ovs_runtime_check.sh -p  [port_id]
-sh jd_ovs_runtime_check.sh -v  [vm_id]
+root# ovs-runtime-check -p  [port_id]
+root# ovs-runtime-check -v  [vm_id]
 
 
-4.add_match_flow.sh
+4.add_match_flow.sh --> ovs-match-check
 此脚本用于抓取被ovs flow table drop的packet, 如果packet没有被ovs drop那么是抓不到的
 
 例如:
-如果需要抓取从port-1exxhsin4s出来的packet或是要进入port-1exxhsin4s的packet,运行"sh add_match_flow.sh port-1exxhsin4s", 然后通过tcpdump -i br0 -enn查看drop的packet以及drop的原因
+如果需要抓取从port-1exxhsin4s出来的packet或是要进入port-1exxhsin4s的packet,运行"ovs-match-check port-1exxhsin4s", 然后通过tcpdump -i br0 -enn查看drop的packet以及drop的原因
 
 从port-1exxhsin4s发送的ARP报文被drop,drop的原因是没有命中ovs的25号表
 根据MAC地址判断是发送的报文, "vlan 25"表明drop的原因是没有命中25号表
+
+root# ovs-match-check port-1exxhsin4s
+root# tcpdump -i br0 -enn
 
 "
 13:56:28.755403 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
@@ -79,7 +83,7 @@ sh jd_ovs_runtime_check.sh -v  [vm_id]
 13:56:32.758441 fa:16:3e:67:a6:e6 > Broadcast, ethertype 802.1Q (0x8100), length 46: vlan 25, p 0, ethertype ARP, Request who-has 172.16.1.2 tell 172.16.1.9, length 28
 "
 
-drop vlan:
+drop reason:
 vlan 0   : 没有命中0号表
 vlan 5   : 没有命中5号表
 vlan 15  : 没有命中15号表
@@ -92,5 +96,16 @@ vlan 55  : 没有命中55号表
 vlan 60  : 没有命中60号表
 vlan 150 : egress security group drop, 报文是invalid的
 vlan 550 : ingress security group drop,报文是invalid的
+
+5. ovsarping.sh --> ovs-arping-check
+此脚本用来检测VM是否获取到了ip地址
+
+root# ovs-arping-check -p port-abx98fm0ec  -d ff:ff:ff:ff:ff:ff -w 192.168.1.1 -x 192.168.1.4
+
+6. cc-check.sh  //一键检测
+//检测floatingip
+sh cc-check.sh -d huabei -f 117.122.248.190
+//检测VM
+sh cc-check.sh -d huabei -v c38f2ebd-bdac-498a-88ec-cee0b56a3581
 
 
