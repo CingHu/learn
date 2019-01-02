@@ -28,8 +28,8 @@ sudo ip netns exec $NS_NAME ip link set $NS_TAP_NAME up
 sudo ip netns exec $NS_NAME ip route add default via $DEFAULT_GW dev $NS_TAP_NAME
 sudo ip netns exec $NS_NAME ip a
 
-ovs-vsctl del-port $TAPNAME
-ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME  -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC
+
+ovs-vsctl -- --if-exists del-port $TAPNAME -- add-port br0 $TAPNAME  -- set Interface $TAPNAME external-ids:iface-status=active -- set Interface $TAPNAME external-ids:attached-mac=$MAC;ovs-vsctl get interface $TAPNAME ofport
 ovs-vsctl list interface $TAPNAME
 
 
@@ -44,78 +44,6 @@ IPADDR="172.16.10.3/24"
 DEFAULT_GW="172.16.10.1"
 NS_NAME=$TAPNAME
 
-compute2:
-TAPNAME="port-brvigvjk4d"
-MAC="fa:16:3e:0d:19:a8"
-IPADDR="192.168.1.4/24"
-DEFAULT_GW="192.168.1.1"
-NS_NAME=$TAPNAME
-
-compute1:
-TAPNAME="port-abx98fm0ec"
-MAC="fa:16:3e:a2:39:1c"
-IPADDR="192.168.1.5/24"
-DEFAULT_GW="192.168.1.1"
-NS_NAME=$TAPNAME
-
-compute2:
-TAPNAME="port-f2zx0qqozd"
-MAC="fa:16:3e:f4:fa:fb"
-IPADDR="172.18.123.4/24"
-DEFAULT_GW="172.18.123.1"
-NS_NAME=$TAPNAME
-
-beicheng compute4:
-TAPNAME="port-cqyjf2ag4j"
-MAC="fa:16:3e:03:0d:54"
-IPADDR="172.18.123.3/24"
-DEFAULT_GW="172.18.123.1"
-NS_NAME=$TAPNAME
-
-
-TAPNAME="port-9e5hulm7oc"
-MAC="fa:16:3e:36:d9:c8"
-IPADDR="192.168.100.4"
-DEFAULT_GW="192.168.100.1"
-NS_NAME=$TAPNAME
-
-TAPNAME="port-feyhqtf6dj"
-MAC="fa:16:3e:50:81:c5"
-IPADDR="192.168.100.6"
-DEFAULT_GW="192.168.100.1"
-NS_NAME=$TAPNAME
-
-
-TAPNAME="port-pkmo0ini2e"
-MAC="fa:16:3e:d2:47:62"
-IPADDR="192.168.100.8"
-DEFAULT_GW="192.168.100.1"
-NS_NAME=$TAPNAME
-
-
-TAPNAME="port-nbqu8dc1vn"
-MAC="fa:16:3e:41:93:e7"
-IPADDR="192.168.1.19"
-DEFAULT_GW="192.168.1.1"
-NS_NAME=$TAPNAME
-
-
-
-
-
-TAPNAME="port-5ki9qd9qme"
-MAC="fa:16:3e:68:46:06"
-IPADDR="172.16.0.3"
-DEFAULT_GW="172.16.0.1"
-NS_NAME=$TAPNAME
-
-
-TAPNAME="port-7dz4wrpefy"
-MAC="fa:16:3e:0d:19:a8"
-IPADDR="192.168.1.4"
-DEFAULT_GW="192.168.1.1"
-NS_NAME=$TAPNAME
-
 
 hc compute5:
 TAPNAME="port-ad1a8pnh40"
@@ -126,9 +54,9 @@ NS_NAME=$TAPNAME
 
 bc_compute1:
 TAPNAME="port-48ui4owovb "
-MAC="fa:16:3e:9c:20:cd"
-IPADDR="172.16.64.3/24"
-DEFAULT_GW="172.16.64.1"
+MAC="fa:16:3e:64:7b:d2"
+IPADDR="172.16.1.70/24"
+DEFAULT_GW="172.16.1.1"
 NS_NAME=$TAPNAME
 
 
@@ -318,22 +246,15 @@ mysql> drop user cc;
 ovs-ofctl dump-flows -O openflow13 br0 | sed -e '/NXST_FLOW/d' -e 's/\(idle\|hard\)_age=[^,]*,//g' -e 's/\(duration\|n_packets\|n_bytes\)=[^,]*,//g'
 watch -n 1 -d "ovs-ofctl dump-flows -O openflow13 br0 | grep -v "n_packets=0" | sed -e '/NXST_FLOW/d' -e 's/\(duration\)=[^,]*,//g' -e 's/send_flow_rem//g'"
 
-#Outpurt
+#Output
 /bin/sh -c /usr/bin/vrouter /etc/vrouter/config.json >/export/Logs/vrouter/vrouter.log 2>&1
 /bin/sh -c /usr/bin/cc_router /etc/cc_router/config.json >/export/Logs/cc_router/cc_router.log 2>&1
 env GOTRACEBACK=crash nohup /usr/local/bin/cc_controller /etc/cc_controller/compute.json  >/var/log/cc_controller/app.log 2>&1 & disown
 
 
-#抓取vni=10的包
+
 #首开智慧社ip：221.216.144.123
-tcpdump -i any port 4789 and udp[14:1]=0x0a
-tcpdump -i any port 4789 and udp[14:1]=0x0a -envvvXl | grep -i icmp
-tcpdump -i any port 4789 and udp[14:1]=0x19 -en -c 100 -vvvxx
 
-tcpdump -i any  port 4789 -l -nnn -vvv -X -e
-
-#抓取HTTP请求
-tcpdump -ni any tcp port 8080 -s 0 -A
 
 #create schema
 ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema
@@ -379,6 +300,7 @@ hping3 -q -n -a 192.168.1.3  --udp -s 53 --keep -p 68 --flood 192.168.1.4
 #start service
 env GOTRACEBACK=crash /usr/local/bin/cc_controller /etc/cc_controller/controller_config.json >/export/Logs/cc_controller/app.log 2>&1
 /bin/sh -c env GOTRACEBACK=crash /usr/local/bin/cc_controller /etc/cc_controller/controller_config.json >/export/Logs/cc_controller/app.log 2>&1
+env GOTRACEBACK=crash nohup /usr/local/bin/cc_controller /etc/cc_controller/vrouter.json >/var/log/cc_controller/app.log 2>&1 & disown
 
 #vm interface up/down
 virsh domif-setlink 8c6d0081-b0b2-4ce8-98ad-e7be6f7804af port-jy3qtei55b down
@@ -427,6 +349,41 @@ netsh interface ipv4 show interfaces
 netsh interface ipv4 show interfaces level=verbose
 netsh interface ipv4 show neighbors
 
+#kill controller
+
+
+#sed截取字符串
+ps -ef|grep qemu-kvm |grep -v grep | sed "s/.*openvswitch\/\(.*\),server\ .*/\1/"
+ovs-vsctl show | grep port- | sed -e "s/\"//g" -e "s/\ //g"| grep Interface |sed "s/Interface\(.*\).*/\1/"
+
+#开启80端口
+python -m SimpleHTTPServer 80
+
+#check all flow table
+virsh list | grep running | awk '{print $2}'| xargs -i virsh domiflist {} | grep port- | awk '{print $1}'|xargs -i ovs-runtime-check -p {} | tee result.log
+
+#查看CPU使用率前20
+ps -aux | sort -rnk 3 | head -20
+#查看内存使用率前20
+ps -aux | sort -rnk 4 | head -20
+
+#ping 时间
+ping www.baidu.com | awk '{print $0" "strftime("%Y-%m-%d %H:%M:%S",systime()) }'
+
+#查看tcp情况
+netstat -nat |awk '{print $6}'|sort|uniq -c|sort -rn‘
+
+#查看连接80端口的ip
+netstat -anlp|grep 80|grep tcp|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -nr|head -n 20
+
+#将发往本机（192.168.1.15）的9200端口访问转发到192.168.1.19的9200端口
+ssh -p 22 -C -f -N -g -L 9200:192.168.1.19:9200 ihavecar@192.168.1.19
+
+#查看进程所在的cpu
+ps -eLo tid,psr,comm | grep -e revalidator -e handler -e ovs -e pmd -e urc -e eal
+
+#修改进程的max fd
+prlimit -p `cat /var/run/openvswitch/ovs-vswitchd.pid` --nofile=102400
 
 
 
