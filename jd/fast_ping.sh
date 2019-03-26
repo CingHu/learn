@@ -43,8 +43,7 @@ function kill_process()
 }
 
 # register quit singal
-trap "echo 'You want to kill me' && kill_proce
-ss && exit 0" TERM
+trap "echo 'You want to kill me' && kill_process && exit 0" TERM
 trap "echo 'You want to interept me' && kill_process && exit 0" INT
 
 # splite ip list into several filesm
