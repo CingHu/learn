@@ -1,0 +1,1 @@
+find /etc/rc.d/rc.local.d/ -type f -exec /bin/sh {} \;
