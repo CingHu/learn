@@ -188,10 +188,10 @@ function replace_ping() {
     local ping=$1
     if [ $ping ]; then
         if [ $ping = "vxlan.ping.request" ]; then
-            local cmd=" udp[50:1] = 0x08"
+            local cmd="  udp[39] = 0x01 and udp[50:1] = 0x08"
             ARGS=${ARGS/$ping/$cmd}
         elif [ $ping = "vxlan.ping.reply" ]; then
-            local cmd=" udp[50:1] = 0x0"
+            local cmd="  udp[39] = 0x01 and udp[50:1] = 0x0"
             ARGS=${ARGS/$ping/$cmd}
         fi
     fi

@@ -7,6 +7,30 @@ BLUE='\e[1;34m'
 
 NC='\e[0m'
 
+COUNT=1
+
+declare -A GWPORTID=()
+declare -A GWIP=()
+declare -A GWMAC=()
+declare -A SNATPORTID=()
+declare -A SNATIP=()
+declare -A SNATMAC=()
+declare -A SNAT_BINDING_HOST=()
+
+declare -A BASIC_MAP=()
+
+declare -A info=()
+declare -A port=()
+declare -A dhcp=()
+declare -A router=()
+declare -A subnet=()
+declare -A network=()
+declare -A server=()
+declare -A fip=()
+
+declare -A ha_visibility=()
+declare -A result=()
+
 function init()
 {
     PID=""
@@ -18,13 +42,7 @@ function init()
     FIP=""
     VMID=""
     ROUTERID=""
-    GWPORTID=""
-    GWIP=""
-    GWMAC=""
-    SNATPORTID=""
-    SNATIP=""
-    SNATMAC=""
-    SNAT_BINDING_HOST=""
+    NETID=""
 }
 
 function pnerror()
@@ -35,7 +53,7 @@ function pnerror()
 
 function check_str_null()
 {
-        if [ "$2" == "" ];then
+        if [ "X$2" == "X" ];then
               pnerror "$1"
         fi
 }
@@ -85,6 +103,68 @@ function paraseargs()
     fi
 }
 
+function show_config()
+{
+
+    local resource_infos=$1
+    local var=$(declare -p "$2")
+    local result=""
+    local header=""
+    local header_line=0
+
+    eval "declare -A local resource_map"=${var#*=}
+
+    for key in ${!resource_map[@]}
+    do
+        value=$(echo "${resource_infos}" | python -c "import sys, json; obj=json.load(sys.stdin); print obj['$key']"|sed -e "s/\ //g" -e "s/\n/\ /g" -e "s/None//g")
+        item=${resource_map[${key}]}
+        except_value=$(echo "$item"| cut -d"," -f1)
+        color=$(echo "$item"| cut -d"," -f2)
+        len=$(echo "$item"| cut -d"," -f3)
+
+        f_value=$(printf "%-${len}s" $value|sed "s/\ /*/g")
+        f_key=$(printf "%-${len}s" $key|sed "s/\ /*/g")
+        header_line=$(expr $header_line + 1)
+        header_line=$(expr $header_line + $len)
+        new_len=$(expr $len + 13)
+        
+        if [ "$except_value" == "null" ];then
+            if [ "X$value" != "X" ];then
+                if [ "$color" == "error" ];then
+                    f_value=$(printf "%-${new_len}s" "${RED}& Error${NC}"|sed "s/\ /*/g")
+                elif [ "$color" == "warn" ];then
+                    f_value=$(printf "%-${new_len}s" "${YELLOW}& Warn${NC}" |sed "s/\ /*/g")
+                fi
+            fi
+        elif [ "$except_value" == "!null" ];then
+            if [ "X$value" == "X" ];then
+                if [ "$color" == "error" ];then
+                    f_value=$(printf "%-${new_len}s" "${RED}& Error${NC}"|sed "s/\ /*/g")
+                elif [ "$color" == "warn" ];then
+                    f_value=$(printf "%-${new_len}s" "${YELLOW}& Warn${NC}" |sed "s/\ /*/g")
+                fi
+            fi
+        else
+            if [ "$except_value" != "$value" ];then
+                if [ "$color" == "error" ];then
+                    f_value=$(printf "%-${new_len}s" "${RED}& $value${NC}"|sed "s/\ /*/g")
+                elif [ "$color" == "warn" ];then
+                    f_value=$(printf "%-${new_len}s" "${YELLOW}& $value${NC}"|sed "s/\ /*/g")
+                fi
+            fi
+        fi
+        info[$key]=$value
+        result=${result}"| ${f_value}" 
+        header=${header}"+ ${f_key}" 
+    done
+
+    printf "%-${header_line}s\n" "="|sed "s/\ /=/g"
+    echo -e "${header}"|sed "s/\*/\ /g"
+    printf "%-${header_line}s\n" "-"|sed "s/\ /-/g"
+    echo -e "${result}"|sed "s/\*/\ /g"
+    printf "%-${header_line}s\n" "-"|sed "s/\ /-/g"
+}
+
 function check_config()
 {
     local resource_infos=$1
@@ -104,7 +184,6 @@ function check_config()
             continue
         fi
         action=$(echo $i"p")
-        #line=$(cat "$resource_infos" | sed -n $action)
         line=$(echo "$resource_infos" | sed -n $action)
         key=$(echo $line | sed -e "s/\ //g" | cut -d"|" -f2)
         value=$(echo $line | sed -e "s/\ //g" -e "s/None//g" | cut -d"|" -f3)
@@ -124,8 +203,15 @@ function check_config()
         header_line=$(expr $header_line + 1)
         header_line=$(expr $header_line + $len)
         new_len=$(expr $len + 13)
-        
-        if [ "$except_value" == "!null" ];then
+        if [ "$except_value" == "null" ];then
+            if [ "X$value" != "X" ];then
+                if [ "$color" == "error" ];then
+                    f_value=$(printf "%-${new_len}s" "${RED}& Error${NC}"|sed "s/\ /*/g")
+                elif [ "$color" == "warn" ];then
+                    f_value=$(printf "%-${new_len}s" "${YELLOW}& Warn${NC}" |sed "s/\ /*/g")
+                fi
+            fi
+        elif [ "$except_value" == "!null" ];then
             if [ "X$value" == "X" ];then
                 if [ "$color" == "error" ];then
                     f_value=$(printf "%-${new_len}s" "${RED}& Error${NC}"|sed "s/\ /*/g")
@@ -133,13 +219,16 @@ function check_config()
                     f_value=$(printf "%-${new_len}s" "${YELLOW}& Warn${NC}" |sed "s/\ /*/g")
                 fi
             fi
-        elif [ "$except_value" != "$value" ];then
-            if [ "$color" == "error" ];then
-                f_value=$(printf "%-${new_len}s" "${RED}& $value${NC}"|sed "s/\ /*/g")
-            elif [ "$color" == "warn" ];then
-                f_value=$(printf "%-${new_len}s" "${YELLOW}& $value${NC}"|sed "s/\ /*/g")
+        else
+            if [ "$except_value" != "$value" ];then
+                if [ "$color" == "error" ];then
+                    f_value=$(printf "%-${new_len}s" "${RED}& $value${NC}"|sed "s/\ /*/g")
+                elif [ "$color" == "warn" ];then
+                    f_value=$(printf "%-${new_len}s" "${YELLOW}& $value${NC}"|sed "s/\ /*/g")
+                fi
             fi
         fi
+        
         info[$key]=$value
         result=${result}"| ${f_value}" 
         header=${header}"+ ${f_key}" 
@@ -161,38 +250,50 @@ function port_info(){
         ["binding_host_id"]="!null,warn,38"
         ["device_id"]="!null,warn,38"
         ["device_owner"]="!null,error,15"
+        ["status"]="ACTIVE,error,15"
+    )
+    declare -A port2_visibility=(
         ["fixed_ips"]="!null,error,85"
     )
     
-    declare -A port2_visibility=(
+    declare -A port3_visibility=(
         ["id"]="!null,error,38"
         ["mac_address"]="!null,error,20"
         ["network_id"]="!null,error,38"
         ["project_id"]="!null,error,35"
         ["security_group_ids"]="!null,warn,38"
-        ["status"]="ACTIVE,error,15"
     )
+
+    if [ "$2" == "network:router_centralized_snat" ];then
+         port3_visibility["project_id"]="null,error,35"
+         port3_visibility["security_group_ids"]="null,error,38"
+    elif [ "$2" == "network:dhcp" ];then
+         port3_visibility["security_group_ids"]="null,error,38"
+    fi
+
+    if [ "$2" == "network:router_interface_distributed" ];then
+        port3_visibility["security_group_ids"]="null,error,38"
+        port1_visibility["binding_host_id"]="null,warn,38"
+    fi
 
     portid=$1
 
-    local ports=$(openstack port show $portid)
+    local ports=$(openstack port show $portid -f json)
 
     echo -e "${GREEN}port $portid:${NC}"
-    check_config "${ports}"  port1_visibility
-    check_config "${ports}"  port2_visibility
+    show_config "${ports}"  port1_visibility
+    show_config "${ports}"  port2_visibility
+    show_config "${ports}"  port3_visibility
     echo -e "\n"
 
     for key in ${!info[@]}
     do
         port[$key]=${info[${key}]}
-        if [ "$key" == "fixed_ips" ];then
-            ip=$(echo ${info[${key}]}|sed "s/.*ip_address='\(.*\)',subnet_id.*/\1/g")
-            subnet_id=$(echo ${info[${key}]}|sed "s/.*subnet_id='\(.*\)'.*/\1/g")
-            port["ip_address"]=${ip}
-            port["subnet_id"]=${subnet_id}
-        fi
     done
     info=()
+    if [ "X${port["security_group_ids"]}" != "X" ];then
+       sg_infos  ${port["security_group_ids"]}
+    fi
 }
 
 function subnet_info(){
@@ -286,8 +387,8 @@ function router_info(){
         ["status"]="ACTIVE,error,30"
     )
     router_id=$(openstack port find router $1)
-    check_str_null "subnet ${port["subnet_id"]} not binding router" ${router_id}
-    if [ ${router_id} != "" ];then
+    check_str_null "port $1 not binding router" ${router_id}
+    if [ "X${router_id}" != "X" ];then
        local routers=$( openstack router show $router_id) 
        echo -e "${GREEN}router $router_id: ${NC}"
        check_config "${routers}"  router_visibility
@@ -297,20 +398,27 @@ function router_info(){
            router[$key]=${info[${key}]}
        done
 
-       external_gateway_network=$(echo "${routers}" | grep -w external_gateway_info |cut -d"|" -f3)
+       #python -c 'import sys; [sys.stdout.write(r+"\n") for r in ["1","2"]]'
+       external_gateway_network=$(echo "${routers}" | grep -w external_gateway_info |cut -d"|" -f3 | sed -e "s/^$//g" -e "s/\ //g" -e "s/\"//g")
+       #external_gateway_network=$(echo "${routers}" | grep -w external_gateway_info |cut -d"|" -f3 | sed -e "s/^$//g" -e "s/\ //g" -e "s/\"//g" -e "s/\ //g" -e "s/\]//g" -e "s/\[//g")
        check_str_null "router $router_id not set external network" ${external_gateway_network}
-       if [ "X$external_gateway_network" != "X" ];then
+       if [ "X${external_gateway_network}" != "X" ];then
            router["external_gateway_network"]=${external_gateway_network}
            router["network_id"]=$(echo ${external_gateway_network} | sed "s/.*network_id:\(.*\),\ ena.*/\1/g")
+           external_fixed_ips=$(openstack router show $router_id  | grep -w external_gateway_info |cut -d"|" -f3 | sed -e "s/^$//g" -e "s/\ //g"|python -c "import sys, json; obj=json.load(sys.stdin);[sys.stdout.write(str(item)+\"\n\") for item in obj[\"external_fixed_ips\"]]"|sed -e "s/}\,{/\n/g" -e "s/}//g" -e "s/{//g"  -e "s/u'//g" -e "s/\ //g" -e "s/'//g")
+           echo -e "${GREEN}router $router_id external network info:${NC}"
+           printf "%-120s\n" " "|sed "s/\ /=/g"
+           echo -e "${external_fixed_ips}"
+           echo -e "\n"
        fi
 
-       interfaces_info=$(echo "${routers}" | grep -w interfaces_info |cut -d"|" -f3| sed -e "s/\"//g" -e "s/\ //g" -e "s/\]//g" -e "s/\[//g")
+       local interfaces_info=$(echo "${routers}" | grep -w interfaces_info |cut -d"|" -f3| sed -e "s/\"//g" -e "s/\ //g" -e "s/\]//g" -e "s/\[//g")
        check_str_null "router $router_id not set subnet" ${interfaces_info}
        if [ "X$interfaces_info" != "X" ];then
            router["interfaces_info"]=${interfaces_info}
            echo -e "${GREEN}router $router_id interfaces info:${NC}"
            printf "%-120s\n" " "|sed "s/\ /=/g"
-           echo ${interfaces_info}| sed -e "s/}\,{/\n/g" -e "s/}//g" -e "s/{//g" -e "s/\,/\  /g"
+           echo "$interfaces_info"| sed -e "s/}\,{/\n/g" -e "s/}//g" -e "s/{//g" -e "s/\,/\  /g"
            echo -e "\n"
        fi
     fi
@@ -334,12 +442,48 @@ function l3_agent_info(){
     check_config "${agents}"  l3_visibility
     info=()
 }
-function l3_agent_infos(){
+
+function l3_agent_check_ha_state(){
     router_id=$1
     echo -e "${GREEN}snat l3 agent ha state:${NC}"
-    printf "%-40s\n" " "|sed "s/\ /=/g"
-    openstack network agent list --router ${router_id}  --long | grep neutron-l3-agent | awk -F"|" '{print "|"$4"|"$9"|"}'
-    printf "%-40s\n" " "|sed "s/\ /-/g"
+    printf "%-45s\n" " "|sed "s/\ /=/g"
+    local items=$(openstack network agent list --router ${router_id}  --long | grep neutron-l3-agent|sed -e "s/\ //g" | awk -F"|" '{print "|"$4"|"$9"|"}')
+    for item in `echo "${items}"`
+    do
+        host=$(echo $item | cut -d"|" -f2)    
+        state=$(echo $item | cut -d"|" -f3)    
+        f_state="${GREEN}$state${NC}"
+        if [[ "${state}" != "active" && "${state}" != "standby" ]];then
+            f_state="${YELLOW}$state${NC}"
+        elif [ "$state" != "" ];then
+            if [ "${ha_visibility[$state]}" != "" ];then
+                echo "host not equal 3"
+                f_state="${RED}$state${NC}"
+            fi
+        fi
+        if [ "$host" != "" ];then
+            result["$host"]=${f_state}
+        fi
+        if [ "$state" != "" ];then
+            ha_visibility[$state]=$host
+        fi
+    done
+    master_host=${ha_visibility["active"]}
+    if [ "$master_host" != "$SNAT_BINDING_HOST" ];then
+       if [ "$SNAT_BINDING_HOST" != "" ];then
+            f_state="${RED}Error${NC}"
+            result["$master_host"]=${f_state}
+       fi
+    fi
+    for key in ${!result[*]};do
+        r=$(printf "%-35s%-2s%-15s\n" "$key" ":" ${result[$key]})
+        echo -e "${r}"
+    done
+    printf "%-45s\n" " "|sed "s/\ /-/g"
+}
+function l3_agent_infos(){
+    router_id=$1
+    l3_agent_check_ha_state $router_id
     for id in `openstack network agent list --router ${router_id} | grep neutron-l3-agent | cut -d"|" -f2`
     do
         l3_agent_info $id
@@ -365,7 +509,7 @@ function sg_rule_info(){
              fi
              local_sg[$key]=$value
          done
-         printf "%-20s%-15s%-15s%-20s%-20s%-30s%-50s\n" "direction=${local_sg['direction']}" "ethertype=${local_sg['ethertype']}" "protocol=${local_sg['protocol']}" "port_range_max=${local_sg['port_range_max']}" "port_range_min=${local_sg['port_range_min']}"  "remote_ip_prefix=${local_sg['remote_ip_prefix']}"  "remote_group_id=${local_sg['remote_group_id']}"
+         printf "%-20s%-15s%-15s%-23s%-23s%-30s%-50s\n" "direction=${local_sg['direction']}" "ethertype=${local_sg['ethertype']}" "protocol=${local_sg['protocol']}" "port_range_max=${local_sg['port_range_max']}" "port_range_min=${local_sg['port_range_min']}"  "remote_ip_prefix=${local_sg['remote_ip_prefix']}"  "remote_group_id=${local_sg['remote_group_id']}"
     done
 }
 
@@ -447,24 +591,24 @@ function ports_info()
     #network:router_ha_interface,network:ha_router_replicated_interface, network:floatingip,compute:private_line
     #compute:pass-pro,compute:pass-mgmt,compute:yidun, compute:public
     local portid=""
-    local netid=$1
+    local subnetid=$1
     for device_owner in network:router_gateway network:router_interface_distributed network:router_centralized_snat network:dhcp compute:private_line
     do
-        portids=$(openstack port list --network $netid --device-owner $device_owner -c ID | sed "s/\ //g"|sed -n '/|[0-9a-z]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}|/p' | cut -d"|" -f2)
+        portids=$(openstack port list --device-owner $device_owner --fixed-ip subnet=$subnetid -c ID | sed "s/\ //g"|sed -n '/|[0-9a-z]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}|/p' | cut -d"|" -f2)
         for portid in ${portids}
         do
             echo -e "${GREEN}$device_owner port info: $portid ${NC}"
-            port_info $portid
+            port_info $portid $device_owner
             if [ "$device_owner" == "network:router_interface_distributed" ];then
-                GWPORTID=${port["id"]}
-                GWIP=${port["ip_address"]}
-                GWMAC=${port["mac_address"]}
+                GWPORTID["$subnetid"]=${port["id"]}
+                GWIP["$subnetid"]=${port["fixed_ips"]}
+                GWMAC["$subnetid"]=${port["mac_address"]}
             fi
             if [ "$device_owner" == "network:router_centralized_snat" ];then
-                SNATPORTID=${port["id"]}
-                SNATIP=${port["ip_address"]}
-                SNATMAC=${port["mac_address"]}
-                SNAT_BINDING_HOST=${port["binding_host_id"]}
+                SNATPORTID["$subnetid"]=${port["id"]}
+                SNATIP["$subnetid"]=${port["fixed_ips"]}
+                SNATMAC["$subnetid"]=${port["mac_address"]}
+                SNAT_BINDING_HOST["$subnetid"]=${port["binding_host_id"]}
             fi
         done
     done
@@ -473,28 +617,38 @@ function ports_info()
 function save_port()
 {
     PID=${port["id"]}
-    FIXEDIP=${port["ip_address"]}
+    FIXEDIP=${port["fixed_ips"]}
     MAC=${port["mac_address"]}
     DEVICE_OWNER=${port["device_owner"]}
     DEVICE_ID=${port["device_id"]}
     BINDING_HOST=${port["binding_host_id"]}
+    NETID=${port["network_id"]}
 
 }
+
+function subnet_ids_info()
+{
+    for item in  `echo $1`
+    do
+        local fi=$(echo $item | sed -e "s/'//g")
+        local ip=$(echo $fi | sed -e "s/\ip_address=\(.*\),.*/\1/")
+        local id=$(echo $fi | sed -e "s/.*,subnet_id=\(.*\)/\1/")
+        subnet_info $id
+        ports_info $id
+    done
+}
+
 function vpc_info()
 {
     local portid=$1
 
     port_info "$portid"
     save_port
-
-    if [ "X${port["subnet_id"]}" != "X" ];then
-        subnet_info ${port["subnet_id"]}
-    fi
-
+    subnet_ids_info "${port["fixed_ips"]}"
+    
     if [ "X${port["network_id"]}" != "X" ];then
         network_info ${port["network_id"]}
         dhcp_agent_infos ${port["network_id"]}
-        ports_info ${port["network_id"]}
     fi
 
     router_info "$portid"
@@ -503,32 +657,39 @@ function vpc_info()
         l3_agent_infos ${router['id']}
     fi
 
-    if [ "X${port["security_group_ids"]}" != "X" ];then
-       sg_infos  ${port["security_group_ids"]}
-    fi
 
 }
 
 function baisc_info()
 {
-    echo -e "${GREEN}basic info:${NC}"
-    printf "%65s\n" " "|sed "s/\ /=/g"
-    printf "%-15s%10s%-50s\n" "VMId" "| " "$VMID"
-    printf "%-15s%10s%-50s\n" "FloatingIP" "| " "$FIP"
-    printf "%-15s%10s%-50s\n" "PortId" "| " "$PID"
-    printf "%-15s%10s%-50s\n" "FixedIp" "| " "$FIXEDIP"
-    printf "%-15s%10s%-50s\n" "MAC" "| " "$MAC"
-    printf "%-15s%10s%-50s\n" "DevOwner" "| " "$DEVICE_OWNER"
-    printf "%-15s%10s%-50s\n" "BindHost" "| " "$BINDING_HOST"
-    printf "%-15s%10s%-50s\n" "RouterId" "| " "$ROUTERID"
-    printf "%-15s%10s%-50s\n" "GWPortId" "| " "$GWPORTID"
-    printf "%-15s%10s%-50s\n" "GWIp" "| " "$GWIP"
-    printf "%-15s%10s%-50s\n" "GWMac" "| " "$GWMAC"
-    printf "%-15s%10s%-50s\n" "SNatPortId"  "| " "$SNATPORTID"
-    printf "%-15s%10s%-50s\n" "SNatIP" "| " "$SNATIP"
-    printf "%-15s%10s%-50s\n" "SNatMAC" "| " "$SNATMAC"
-    printf "%-15s%10s%-50s\n" "BindHost" "| " "$SNAT_BINDING_HOST"
-    echo -e "\n"
+    #echo -e "${GREEN}basic info:${NC}"
+    printf "%65s#\n" " "|sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "VMId" "| " "$VMID" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "FloatingIP" "| " "$FIP" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "RouterId" "| " "$ROUTERID" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "NetworkId" "| " "$NETID" | sed "s/\ /%/g"
+    printf "%-65s#\n" " "|sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "PortId" "| " "$PID" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "FixedIp" "| " "$FIXEDIP" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "MAC" "| " "$MAC" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "DevOwner" "| " "$DEVICE_OWNER" | sed "s/\ /%/g"
+    printf "%-15s%10s%-50s#\n" "BindHost" "| " "$BINDING_HOST" | sed "s/\ /%/g"
+    printf "%-65s#\n" " "|sed "s/\ /%/g"
+    map_print=$(echo "${GWPORTID[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "GWPortId" "| " "${map_print}" | sed "s/\ /%/g"
+    map_print=$(echo "${GWMAC[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "GWMac" "| " "${map_print}" | sed "s/\ /%/g"
+    map_print=$(echo "${GWIP[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "GWIp" "| " "${map_print}" | sed "s/\ /%/g"
+    printf "%-65s#\n" " "|sed "s/\ /%/g"
+    map_print=$(echo "${SNATPORTID[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "SNatPortId"  "| " "${map_print}" | sed "s/\ /%/g"
+    map_print=$(echo "${SNATMAC[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "SNatMAC" "| " "${map_print}" | sed "s/\ /%/g"
+    map_print=$(echo "${SNATIP[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "SNatIP" "| " "${map_print}" | sed "s/\ /%/g"
+    map_print=$(echo "${SNAT_BINDING_HOST[@]}" | sed s/\ /!/g)
+    printf "%-15s%10s%-50s#\n" "BindHost" "| " "${map_print}" | sed "s/\ /%/g"
 }
 
 function check_floatingip()
@@ -543,6 +704,8 @@ function check_floatingip()
     if [ "X$device_id" != "X" ];then
         server_info $device_id
     fi
+    BASIC_MAP["$COUNT"]=$(baisc_info)
+    COUNT=$(expr $COUNT + 1)
 }
 
 function check_vm()
@@ -556,6 +719,8 @@ function check_vm()
         do
             fip_info  $f
         done
+        BASIC_MAP["$COUNT"]=$(baisc_info)
+        COUNT=$(expr $COUNT + 1)
     done
 }
 
@@ -574,16 +739,18 @@ function check_port()
     if [[ "X$did" != "X" ]];then
         server_info $did
     fi
+    BASIC_MAP["$COUNT"]=$(baisc_info)
+    COUNT=$(expr $COUNT + 1)
 }
 
-declare -A info=()
-declare -A port=()
-declare -A dhcp=()
-declare -A router=()
-declare -A subnet=()
-declare -A network=()
-declare -A server=()
-declare -A fip=()
+function show_basic()
+{
+    for count in ${!BASIC_MAP[@]}
+    do
+        echo -e "${GREEN}number $count basic info:${NC}"
+        echo -e ${BASIC_MAP[$count]} | sed -e "s/%/\ /g" -e "s/#/\n/g" -e "s/!/;\ /g"
+    done
+}
 
 
 if [ "X$OS_AUTH_URL" == "X" ];then
@@ -616,8 +783,7 @@ main()
     if [ "$PORTID" != "" ];then
         check_port
     fi
-
-    baisc_info
+    show_basic
     echo `date "+%Y-%m-%d %H:%M:%S"`" check end"
 }
 
