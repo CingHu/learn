@@ -254,3 +254,29 @@ echo "net.core.rmem_default" >> /etc/sysctl.conf
 echo "net.core.wmem_default" >> /etc/sysctl.conf
 
 
+#预留16个CPU不做irqbalance，并且irqbalance不处理bond1口下的网卡中断。
+
+#修改 /etc/sysconfig/irqbalance
+
+#IRQBALANCE_BANNED_CPUS=ffff0000
+#IRQBALANCE_ARGS=--banirq=78 --banirq=79 --banirq=80 --banirq=81 --banirq=82 --banirq=83 --banirq=84 --banirq=85 --banirq=99 --banirq=100 --banirq=101 --banirq=102 --banirq=103 --banirq=104 --banirq=105 --banirq=106
+
+#开启irqbalance，除网卡中断外，其他中断交给irqbalance做中断均衡，预留部分CPU不做中断负载均衡，手动绑定网卡中断
+
+#通过修改/etc/sysconfig/irqbalance配置文件中的IRQBALANCE_BANNED_CPUS=字段，可以配置哪些CPU不交给irqbalance管理，即守护进程不会再将中断分配给这些CPU核心。比如设置IRQBALANCE_BANNED_CPUS=0000ff00，irqbalance不会将中断分配给8~15这8个CPU。
+
+#irqbalance的--banirq参数可以配置哪些中断不交给irqbalance处理，比如irqbalance --banirq = 43 --banirq = 44，就是禁止43和44 irq做负载均衡
+#
+#通过上面的描述看出，方案二从维护角度来讲更优，那么考虑下如何分配CPU和网卡中断
+
+#将CPU从host中隔离
+
+#vxlan offload
+#This command displays the offloads and the current state:
+
+#ethtool -k ethX
+#This command enables/disables VXLAN support in the driver:
+
+#ethtool -K ethX tx-udp_tnl-segmentation [off|on]
+
+ 
