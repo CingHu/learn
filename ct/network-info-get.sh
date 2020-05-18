@@ -127,7 +127,7 @@ function show_config()
         header_line=$(expr $header_line + 1)
         header_line=$(expr $header_line + $len)
         new_len=$(expr $len + 13)
-        
+
         if [ "$except_value" == "null" ];then
             if [ "X$value" != "X" ];then
                 if [ "$color" == "error" ];then
@@ -154,8 +154,8 @@ function show_config()
             fi
         fi
         info[$key]=$value
-        result=${result}"| ${f_value}" 
-        header=${header}"+ ${f_key}" 
+        result=${result}"| ${f_value}"
+        header=${header}"+ ${f_key}"
     done
 
     printf "%-${header_line}s\n" "="|sed "s/\ /=/g"
@@ -228,10 +228,10 @@ function check_config()
                 fi
             fi
         fi
-        
+
         info[$key]=$value
-        result=${result}"| ${f_value}" 
-        header=${header}"+ ${f_key}" 
+        result=${result}"| ${f_value}"
+        header=${header}"+ ${f_key}"
     done
 
     printf "%-${header_line}s\n" "="|sed "s/\ /=/g"
@@ -255,7 +255,7 @@ function port_info(){
     declare -A port2_visibility=(
         ["fixed_ips"]="!null,error,85"
     )
-    
+
     declare -A port3_visibility=(
         ["id"]="!null,error,38"
         ["mac_address"]="!null,error,20"
@@ -304,7 +304,7 @@ function subnet_info(){
         ["gateway_ip"]="!null,error,15"
         ["host_routes"]="!null,warn,55"
     )
-    
+
     declare -A subnet2_visibility=(
         ["id"]="!null,error,38"
         ["network_id"]="!null,error,38"
@@ -332,7 +332,7 @@ function network_info(){
         ["port_security_enabled"]="True,warn,25"
         ["provider:network_type"]="!null,error,40"
     )
-    
+
     declare -A net2_visibility=(
         ["provider:segmentation_id"]="!null,error,30"
         ["router:external"]="Internal,error,20"
@@ -359,7 +359,7 @@ function dhcp_agent_info(){
         ["host"]="!null,error,30"
         ["last_heartbeat_at"]="!null,error,25"
     )
-    
+
     dhcp_agent_id=$1
 
     local agents=$(openstack network agent show $dhcp_agent_id)
@@ -389,7 +389,7 @@ function router_info(){
     router_id=$(openstack port find router $1 | sed -n '/^[0-9a-z]\{8\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{4\}-[0-9a-f]\{12\}$/p')
     check_str_null "port $1 not binding router" ${router_id}
     if [ "X${router_id}" != "X" ];then
-       local routers=$( openstack router show $router_id) 
+       local routers=$( openstack router show $router_id)
        echo -e "${GREEN}router $router_id: ${NC}"
        check_config "${routers}"  router_visibility
        echo -e "\n"
@@ -433,7 +433,7 @@ function l3_agent_info(){
         ["host"]="!null,error,30"
         ["last_heartbeat_at"]="!null,error,25"
     )
-    
+
     l3_agent_id=$1
 
     local agents=$(openstack network agent show $l3_agent_id)
@@ -450,8 +450,8 @@ function l3_agent_check_ha_state(){
     local items=$(openstack network agent list --router ${router_id}  --long | grep neutron-l3-agent|sed -e "s/\ //g" | awk -F"|" '{print "|"$4"|"$9"|"}')
     for item in `echo "${items}"`
     do
-        host=$(echo $item | cut -d"|" -f2)    
-        state=$(echo $item | cut -d"|" -f3)    
+        host=$(echo $item | cut -d"|" -f2)
+        state=$(echo $item | cut -d"|" -f3)
         f_state="${GREEN}$state${NC}"
         if [[ "${state}" != "active" && "${state}" != "standby" ]];then
             f_state="${YELLOW}$state${NC}"
@@ -558,7 +558,7 @@ function server_info(){
         ["OS-EXT-STS:vm_state"]="active,error,25"
         ["config_drive"]="True,error,15"
     )
-    
+
     declare -A server2_visibility=(
         ["flavor"]="!null,error,50"
         ["id"]="!null,error,38"
@@ -645,7 +645,7 @@ function vpc_info()
     port_info "$portid"
     save_port
     subnet_ids_info "${port["fixed_ips"]}"
-    
+
     if [ "X${port["network_id"]}" != "X" ];then
         network_info ${port["network_id"]}
         dhcp_agent_infos ${port["network_id"]}
@@ -788,4 +788,5 @@ main()
 }
 
 main $*
+
 

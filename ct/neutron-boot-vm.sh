@@ -33,12 +33,13 @@ create_network(){
    #neutron router-gateway-set hxn-router-1 ext-net
 
    #openstack router add subnet $ROUTERNAME $SUBNETNAME
-   neutron router-interface-add --project $PROJECTID $ROUTERNAME $SUBNETNAME
+   routerid=$(openstack router list --project $PROJECTID -c ID -c Name | grep $ROUTERNAME | cut -d"|" -f2)
+   neutron router-interface-add ${routerid} $SUBNETNAME
 
-   openstack router set --external-gateway --project $PROJECTID ext-net $ROUTERNAME
+   openstack router set --external-gateway ext-net $routerid
 
    SGID=$(openstack security group  list --project $PROJECTID | grep default | cut -d"|" -f2 | sed -e 's/\ //g')
-   neutron security-group-rule-create --project $PROJECTID  --direction ingress --protocol icmp  $SGID
+   openstack security group rule create --project $PROJECTID  --ingress --protocol icmp ${SGID}
 }
 
 clean_network(){
@@ -55,7 +56,7 @@ clean_network(){
     do
         for subnet in `openstack subnet list --project $PROJECTID | grep $SUBNETNAME | cut -d"|" -f2|sed -e 's/\ //g'`
         do
-            neutron router-interface-delete  $ROUTERNAME $SUBNETNAME 
+            neutron router-interface-delete  $ROUTERNAME $SUBNETNAME
         openstack router unset  --external-gateway $ROUTERNAME
         done
     done
@@ -95,7 +96,7 @@ clean_fip(){
 }
 
 show_fip(){
-    neutron floatingip-list  -c floating_ip_address -c port_id  -c description --project_id $PROJECTID |grep $FIPDESCRIPTION 
+    neutron floatingip-list  -c floating_ip_address -c port_id  -c description --project_id $PROJECTID |grep $FIPDESCRIPTION
 }
 
 
@@ -119,12 +120,14 @@ associate_fip_to_port(){
 }
 
 create_vm(){
-   source  ./hxnrc
+   #source  ./hxnrc
    SGID=$(openstack security group  list --project $PROJECTID | grep default | cut -d"|" -f2 |sed -e 's/\ //g')
    #NETID=$(openstack network show $NETNAME -c id | grep -w id | cut -d"|" -f3|sed -e "s/\ //g"| sed -e 's/\ //g')
    for net in `openstack network list --project $PROJECTID | grep $NETNAME | cut -d"|" -f2|sed -e 's/\ //g'`
    do
-   nova boot --flavor $FLAVORID   --image $IMAGEID --nic net-id=$net --min-count $VMMINCOUNT  --security-group  $SGID --meta admin_pass='Y788^%#23YYYu' --availability-zone $NOVAZONE $VMNAME
+   id=$(nova boot --flavor $FLAVORID   --image $IMAGEID --nic net-id=$net --min-count $VMMINCOUNT  --security-group  $SGID --meta admin_pass='Y788^%#23YYYu' --availability-zone $NOVAZONE $VMNAME | grep -wi -e id | sed -e 's/\ //g'|cut -d"|" -f3)
+   echo "openstack server show ${id}"
+   openstack server show ${id}
    done
 }
 
@@ -163,8 +166,8 @@ function help() {
     echo -e "$0 all_fip     \t create network, vm and fip"
     echo -e "$0 clean       \t delete network, vm"
     echo -e "$0 clean_fip   \t delete network, vm and fip"
-    echo -e "$0 net         \t only create network" 
-    echo -e "$0 vm          \t only create vm" 
+    echo -e "$0 net         \t only create network"
+    echo -e "$0 vm          \t only create vm"
 }
 if [ "$1" == "all" ];then
     create_network
@@ -184,4 +187,5 @@ elif [ "$1" == "vm" ];then
 else
     help
 fi
+
 
