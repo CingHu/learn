@@ -132,7 +132,7 @@ create_vm(){
 }
 
 clean_vm(){
-    for vm in `openstack server list --project $PROJECTID|grep ${VMNAME}|cut -d"|" -f2 |sed -e 's/\ //g'`
+    for vm in `openstack server list --all --project $PROJECTID|grep ${VMNAME}|cut -d"|" -f2 |sed -e 's/\ //g'`
     do
         test -z $vm || nova force-delete "$vm"
     done
@@ -187,5 +187,4 @@ elif [ "$1" == "vm" ];then
 else
     help
 fi
-
 
