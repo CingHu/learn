@@ -1,5 +1,3 @@
-echo 2
-
 cat>ansible.cfg<<'EOF'
 [defaults]
 inventory      = ./hosts
@@ -380,9 +378,12 @@ def get_agent_counter(zone_agents):
             host = agent.get("Host")
             if not host:
                 continue
+            zone = agent.get('Availability Zone', "Default")
             if not tmp_host_counter.get(host, None):
                 agent_type = agent.get("Agent Type", "NULL")
-                tmp_host_counter[host] = {'Alive State':":-)", 'Admin State':":-)", "Host Type":agent["Type"]}
+                tmp_host_counter[host] = {'Alive State':":-)", 'Admin State':":-)", "Host Type":agent["Type"], "Zone":zone}
+            if agent.get("Binary") == "neutron-l3-agent":
+                tmp_host_counter[host]["Zone"]=zone
             host_info = tmp_host_counter[host]
             if agent['Alive'] != ":-)":
                 agent_type = agent.get("Agent Type", "NULL")
@@ -550,4 +551,4 @@ EOF
 
 chmod +x generate_network_table.py network-resource-statics.sh server-db-statics.py show_table.sh resource-statics-dbhosts.sh generate_server_table.py generate_network_host.sh
 
-
+echo "finished"
