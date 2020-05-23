@@ -15,6 +15,7 @@ if [ ${server} = "" ];then
     exit 1
 fi
 
+echo "$server">>kgc_server
 
 #echo "{}" > server.json
 ansible $server  -m copy  -a 'src=./server-db-statics.py dest=/tmp/server-db-statics.py mode=755'

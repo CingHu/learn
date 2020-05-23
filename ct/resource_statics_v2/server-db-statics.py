@@ -171,12 +171,21 @@ def handler_host_couter():
         if re.findall(r'(\w){8}-(\w){4}-(\w){4}-(\w){4}-(\w){12}', host):
             tmp_host=host.split("-")[-1]
             result_host_counter[tmp_host]=states
+
 def handler_total_counter():
     total_counter= result_counter
     zones=total_counter.keys()
+    total={}
     for zone in zones:
         if not total_counter[zone]:
             total_counter.pop(zone)
+    for zone, states_dict in total_counter.iteritems():
+        for item, counter in states_dict.iteritems():
+            if item not in total.keys():
+                total[item] = counter
+            else:
+                total[item]+=counter
+    total_counter["total"]=total
 
 def get_fip_counter():
     cmd='source ~/admin-openrc.sh;openstack port list --network ext-net --device-owner network:floatingip -f json'
@@ -186,8 +195,7 @@ def get_fip_counter():
     except:
         #print("Error: %s" % cmd)
         return
-    for zone, states in result_counter.items():
-        states["Fip Total Counter"] = len(fips)
+    result_counter["total"]["Fip Counter"] = len(fips)
 
 def main():
     zone_agents = get_agents()
