@@ -37,7 +37,7 @@ fi
 
 
 python generate_server_table.py
-mv server.json server-${RANDOM}.json
+cp -f server.json server-${RANDOM}.json
 
 
 EOF
@@ -114,6 +114,20 @@ from prettytable import DEFAULT
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+def dict_chunk(dicts,size):
+    new_list = []
+    dict_len = len(dicts)
+    # 获取分组数
+    while_count = dict_len // size + 1 if dict_len % size != 0 else dict_len / size
+    split_start = 0
+    split_end = size
+    while(while_count > 0):
+    # 把字典的键放到列表中，然后根据偏移量拆分字典
+        new_list.append({k: dicts[k] for k in list(dicts.keys())[split_start:split_end]})
+        split_start += size
+        split_end += size
+        while_count -= 1
+    return new_list
 
 f = open('server.json')
 resources = json.load(f, encoding='utf-8')
@@ -161,22 +175,20 @@ for host, value in host_counter.iteritems():
 column=list(column_set)
 column.sort()
 
-row_num=0
+host_cunter_list=dict_chunk(host_counter, 20)
+
 row=["host/item"]+column
-host_table = PrettyTable(row)
-for host, states in host_counter.iteritems():
-    zone_item=[]
-    zone_item.append(host)
-    row_num+=1
-    for c in column:
-        counter=states.get(c, 0)
-        zone_item.append(counter)
-    if row_num == 20:
-        row_num = 0
-        host_table.add_row(row)
-    host_table.add_row(zone_item)
-#print host_table
-print host_table.get_string(sortby="Alive State", reversesort=True)
+for host_c in host_cunter_list:
+    host_table = PrettyTable(row)
+    for host, states in host_c.iteritems():
+        zone_item=[]
+        zone_item.append(host)
+        for c in column:
+            counter=states.get(c, 0)
+            zone_item.append(counter)
+        host_table.add_row(zone_item)
+    #print host_table
+    print host_table.get_string(sortby="Alive State", reversesort=True)
 
 
 
