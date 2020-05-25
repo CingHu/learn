@@ -8,29 +8,29 @@
 #COMPUTEHOSTS="10.114.196.150,10.114.196.151,10.114.196.234"
 
 # 先定义一些颜色:
-red='\e[0;41m' # 红色  
+red='\e[0;41m' # 红色
 RED='\e[1;31m'
-green='\e[0;32m' # 绿色  
+green='\e[0;32m' # 绿色
 GREEN='\e[1;32m'
-yellow='\e[5;43m' # 黄色  
+yellow='\e[5;43m' # 黄色
 YELLOW='\e[1;33m'
-blue='\e[0;34m' # 蓝色  
+blue='\e[0;34m' # 蓝色
 BLUE='\e[1;34m'
-purple='\e[0;35m' # 紫色  
+purple='\e[0;35m' # 紫色
 PURPLE='\e[1;35m'
-cyan='\e[4;36m' # 蓝绿色  
+cyan='\e[4;36m' # 蓝绿色
 CYAN='\e[1;36m'
 WHITE='\e[1;37m' # 白色
 NC='\e[0m' # 没有颜色
 
 #echo -e "${red}显示红色0 ${NC}"
-#echo -e "${RED}显示红色1 ${NC}"    
+#echo -e "${RED}显示红色1 ${NC}"
 #echo -e "${green}显示绿色0 ${NC}"
-#echo -e "${GREEN}显示绿色1 ${NC}"  
+#echo -e "${GREEN}显示绿色1 ${NC}"
 #echo -e "${yellow}显示黄色0 ${NC}"
-#echo -e "${YELLOW}显示黄色1 ${NC}"    
+#echo -e "${YELLOW}显示黄色1 ${NC}"
 #echo -e "${cyan}显示蓝绿色0 ${NC}"
-#echo -e "${CYAN}显示蓝绿色1 ${NC}" 
+#echo -e "${CYAN}显示蓝绿色1 ${NC}"
 
 ERROR="${red}NOK${NC}"
 OK="${GREEN}OK${NC}"
@@ -50,7 +50,7 @@ help_info(){
 
 while [ -n "$1" ]
 do
-    case "$1" in 
+    case "$1" in
         -vip)
             VIP=$2
             shift
@@ -79,11 +79,11 @@ do
 done
 
 function log(){
-    echo -e "$@"  
+    echo -e "$@"
 }
 
 function log_info (){
-    echo -e "${GREEN} $@ ${NC}"  
+    echo -e "${GREEN} $@ ${NC}"
 }
 
 function log_error (){
@@ -110,8 +110,8 @@ function ping_test(){
 
 function check_service(){
     local ret=${OK}
-    #r=$(systemctl status $1 | grep "active (running)") 
-    r=$(systemctl status $1 | grep "active")
+    #r=$(systemctl status $1 | grep "active (running)")
+    r=$(systemctl status $1 | grep -w "active")
     if [ "${r}" == "" ];then
         log_error "service $1 is down" && ret=${ERROR}
     fi
@@ -122,19 +122,19 @@ function check_quagga(){
     local ret=${OK}
     file="/etc/quagga/ospfd.conf"
     check_file $file
-    r=$(sudo ls -l $file | grep "quagga quagga" | awk '{print $2}') 
+    r=$(sudo ls -l $file | grep "quagga quagga" | awk '{print $2}')
     if test -z ${r}
     then
         log_error "the limits of $file Error" && ret=${ERROR}
     fi
     log "check the limits of $file: ${ret}"
 
-    check_service ospfd.service 
+    check_service ospfd.service
 
     local ret=${OK}
     file="/etc/quagga/zebra.conf"
     check_file $file
-    r=$(sudo ls -l $file | grep "quagga quagga" | awk '{print $2}') 
+    r=$(sudo ls -l $file | grep "quagga quagga" | awk '{print $2}')
     if test -z ${r}
     then
         log_error "the limits of $file Error" && ret=${ERROR}
@@ -142,14 +142,14 @@ function check_quagga(){
     log "check the limits of $file: ${ret}"
 
     local ret=${OK}
-    check_service zebra.service 
+    check_service zebra.service
 
     local ret=${OK}
     r=$(vtysh -d ospfd -c "show ip ospf neighbor" |  grep -i "full" | grep ${NEIGHBOR})
     if [ "${r}" = "" ];then
         log_error "the ospf neighbor of switch do not estableshed" && ret=${ERROR}
     fi
-    log "check the neighbor of switch: ${ret}"
+    log "check the neighbor ${NEIGHBOR} of switch: ${ret}"
 
     local ret=${OK}
     r=$(vtysh -d ospfd -c "show ip ospf route" |  grep ${VIP})
@@ -173,12 +173,11 @@ function check_compute_host(){
     for host in ${hosts}
     do
         ping_test $host
-        ssh -o StrictHostKeyChecking=no -p 10000 > /tmp/computehosts 2>&1
-        r=$(cat /tmp/computehosts| grep "No route to host")
-        if [ "${r}"  != "" ];then
+        r=$(ssh -o StrictHostKeyChecking=no  -v -p10000 $host 2>&1 | grep established)
+        if [ "${r}" = "" ];then
             log_error "the host can not connect $host:10000" && ret=${ERROR}
         fi
-        log "check the service reachble for $host 10000: ${ret}"
+        log "check the network reachble for $host 10000: ${ret}"
     done
 }
 
@@ -228,7 +227,7 @@ function check_nic_default_state(){
         log_error "the init state of vlan nic $VLANNIC onboot=yes" && ret=${ERROR}
     fi
     log "check the init state of vlan nic $VLANNIC : ${ret}"
-    
+
 }
 
 function check_nic_current_state(){
@@ -249,17 +248,17 @@ function check_nic_current_state(){
     local ret=${OK}
     r=$(sudo ip link show dev $VXLANNIC | grep "state UP")
     if [ "${r}" = "" ];then
-        log_error "the admin state of vlan nic $VXLANNIC Down" && ret=${ERROR}
+        log_error "the admin state of vxlan nic $VXLANNIC Down" && ret=${ERROR}
     fi
-    log "check the admin state of vlan nic $VXLANNIC : ${ret}"
+    log "check the admin state of vxlan nic $VXLANNIC : ${ret}"
 
     local ret=${OK}
     r=$(sudo ethtool $VXLANNIC | grep "Link detected: yes")
     if [ "${r}" = "" ];then
-        log_error "the link state of vlan nic $VXLANNIC Link detected: no" && ret=${ERROR}
+        log_error "the link state of vxlan nic $VXLANNIC Link detected: no" && ret=${ERROR}
     fi
-    log "check the link state of vlan nic $VXLANNIC : ${ret}"
-    
+    log "check the link state of vxlan nic $VXLANNIC : ${ret}"
+
 }
 
 function check_nic_default_state(){
@@ -269,14 +268,14 @@ function check_nic_default_state(){
         log_error "the init state of vlan nic $VLANNIC onboot=yes" && ret=${ERROR}
     fi
     log "check the init state of vlan nic $VLANNIC : ${ret}"
-    
+
 }
 
 function check_ovs(){
     local ret=${OK}
     file="/etc/openvswitch/vtep.db"
     check_file $file
-    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}') 
+    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}')
     if test -z ${r}
     then
         log_error "the limits of $file Error" && ret=${ERROR}
@@ -286,21 +285,35 @@ function check_ovs(){
     local ret=${OK}
     file="/etc/openvswitch/conf.db"
     check_file $file
-    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}') 
+    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}')
     if test -z ${r}
     then
         log_error "the limits of $file Error" && ret=${ERROR}
     fi
     log "check the limits of $file: ${ret}"
 
-    check_service openvswitch.service 
+    check_service openvswitch.service
 
     local ret=${OK}
     r=$(ovs-vsctl get-manager | grep "ptcp:6632")
     if [ "${r}" = "" ];then
-        log_error "the listen manager port  not 6632" && ret=${ERROR}
+        log_error "the configuration of manager port  not 6632" && ret=${ERROR}
     fi
-    log "check the listen port 6632 of manager : ${ret}"
+    log "check the configuration of  port 6632: ${ret}"
+
+    local ret=${OK}
+    r=$(netstat -nat | grep 6632 | grep LISTEN| head -n 1)
+    if [ "${r}" = "" ];then
+        log_error "the LISTEN of state for port 6632"  && ret=${ERROR}
+    fi
+    log "check the LISTEN of state for port 6632: ${ret}"
+
+    local ret=${OK}
+    r=$(netstat -nat | grep 6632 | grep ESTABLISHED | head -n 1)
+    if [ "${r}" = "" ];then
+        log_error "the ESTABLISHED of state for port 6632"  && ret=${ERROR}
+    fi
+    log "check the ESTABLISHED of state for port 6632: ${ret}"
 }
 
 function check_vtep(){
@@ -310,7 +323,7 @@ function check_vtep(){
     if [ "${r}" = "" ];then
         log_error "the bridge of vtep not $bridge_name" && ret=${ERROR}
     fi
-    log "check the bridge name of vtep : ${ret}"
+    log "check the bridge name $bridge_name of vtep : ${ret}"
 
     local ret=${OK}
     r=$(ovs-vsctl show | grep "$bridge_name")
@@ -343,14 +356,24 @@ function check_vtep(){
     local ret=${OK}
     file="/etc/openvswitch/vtep.conf"
     check_file $file
-    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}') 
+    r=$(sudo ls -l $file | grep "openvswitch openvswitch" | awk '{print $2}')
     if test -z ${r}
     then
         log_error "the limits of $file not openvswitch:openvswitch" && ret=${ERROR}
     fi
     log "check the limits of $file: ${ret}"
 
-    check_service vtep.service 
+    check_service vtep.service
+}
+
+function check_ovs_flow(){
+    local ret=${OK}
+    bridge_name=$(echo br-$(hostname | awk -F"-" '{print $NF}'|awk -F"e" '{print $(NF-1)"."$NF}'))
+    count=$(ovs-ofctl dump-flows $bridge_name -O openflow13 |wc -l)
+    if [ ${count} -lt 20 ];then
+        log_error "flow count of bridge $bridge_name is $count" && ret=${ERROR}
+    fi
+    log "check the flow count of bridge $bridge_name is $count: ${ret}"
 }
 
 function check_l2gw_agent(){
@@ -384,7 +407,18 @@ function check_l2gw_agent(){
         fi
         log "check the service reachble for ${host_port}: ${ret}"
     done</tmp/ovsdb_hosts
-    
+
+}
+
+function check_vtep_monitor(){
+    local ret=${OK}
+    r=$(sudo crontab -l | grep -e ${VIP}|grep   -e ${VLANNIC}|grep -e ${NEIGHBOR})
+    if [ "${r}" = "" ];then
+        log_error "vtep monitor configurage error" && ret=${ERROR}
+    fi
+    log "check the vtep monitor: ${ret}"
+
+    check_service crond
 }
 
 function check_input(){
@@ -396,7 +430,7 @@ function check_input(){
 function main(){
     #input param check
     check_input
-    
+
     #item check
     check_quagga
     check_compute_host
@@ -407,12 +441,10 @@ function main(){
     check_ovs
     check_vtep
     check_l2gw_agent
+    check_ovs_flow
+    check_vtep_monitor
 }
 
 main
-
-
-
-
 
 
