@@ -24,7 +24,9 @@ create_network(){
         --project $PROJECTID \
     $SUBNETNAME
 
-
+   #ipv6
+   #openstack subnet create --subnet-pool IPv6-subnet-pool --dhcp --ip-version 6 --ipv6-ra-mode dhcpv6-stateful --ipv6-address-mode dhcpv6-stateful --network 6579e3a2-060f-4976-b2fb-60408a240b8d hxn-ipv6-subnet
+ 
    openstack router create  --project $PROJECTID $ROUTERNAME
 
    #neutron router-interface-add hxn-router-1 hxn-test-subnet-1
@@ -35,11 +37,62 @@ create_network(){
    #openstack router add subnet $ROUTERNAME $SUBNETNAME
    routerid=$(openstack router list --project $PROJECTID -c ID -c Name | grep $ROUTERNAME | cut -d"|" -f2)
    neutron router-interface-add ${routerid} $SUBNETNAME
+   
+   #ipv6
+   #openstack router add subnet   huxining-20201012 hxn-ipv6-subnet
 
    openstack router set --external-gateway ext-net $routerid
 
    SGID=$(openstack security group  list --project $PROJECTID | grep default | cut -d"|" -f2 | sed -e 's/\ //g')
-   openstack security group rule create --project $PROJECTID  --ingress --protocol icmp ${SGID}
+   icmp_rule=$(openstack security group rule list $SGID --ingress --protocol icmp | grep "0.0.0.0")
+   if [ "$icmp_rule" == "" ];then
+       openstack security group rule create --project $PROJECTID  --ingress --protocol icmp ${SGID}
+   fi
+}
+
+create_networkv6(){
+    if [ "X$NETZONE" != "X" ];then
+        IF_EXIST=$(openstack network show $V6NETNAME -c name | grep $V6NETNAME)
+        if [ "${IF_EXIST}" == "" ];then
+            openstack network create \
+                --provider-network-type $PROVIDER_NET_TYPE\
+                --availability-zone-hint $NETZONE\
+                --project $PROJECTID \
+            $V6NETNAME
+        fi
+    else
+        IF_EXIST=$(openstack network show $V6NETNAME -c name | grep $V6NETNAME)
+        if [ "${IF_EXIST}" == "" ];then
+            openstack network create \
+                --provider-network-type $PROVIDER_NET_TYPE\
+                --project $PROJECTID \
+            $V6NETNAME
+        fi
+    fi
+    POOL=$(openstack subnet pool list | grep -i ipv6 |cut -d"|" -f2 | sed -e 's/\ //g')
+    if [ "$POOL" == "" ];then
+        echo "Error, Not found ipv6 subnet pool"
+        exit 1
+    fi
+    openstack subnet create --subnet-pool $POOL --dhcp --ip-version 6 --ipv6-ra-mode dhcpv6-stateful --ipv6-address-mode dhcpv6-stateful --network $V6NETNAME $V6SUBNETNAME
+
+   routerid=$(openstack router list --project $PROJECTID -c ID -c Name | grep $V6ROUTERNAME | cut -d"|" -f2)
+   if [ "$routerid" == "" ];then
+       openstack router create  --project $PROJECTID $V6ROUTERNAME
+       routerid=$(openstack router list --project $PROJECTID -c ID -c Name | grep $V6ROUTERNAME | cut -d"|" -f2)
+   fi
+
+   #neutron router-interface-add ${routerid} $V6SUBNETNAME
+   
+   openstack router add subnet ${routerid} $V6SUBNETNAME
+
+   openstack router set --external-gateway ext-net $routerid
+
+   SGID=$(openstack security group  list --project $PROJECTID | grep default | cut -d"|" -f2 | sed -e 's/\ //g')
+   icmp_rule=$(openstack security group rule list $SGID --ingress --protocol icmpv6 | grep "0.0.0.0")
+   if [ "$icmp_rule" == "" ];then
+       openstack security group rule create --project $PROJECTID  --ingress --protocol icmpv6 ${SGID}
+   fi
 }
 
 clean_network(){
@@ -56,7 +109,7 @@ clean_network(){
     do
         for subnet in `openstack subnet list --project $PROJECTID | grep $SUBNETNAME | cut -d"|" -f2|sed -e 's/\ //g'`
         do
-            neutron router-interface-delete  $ROUTERNAME $SUBNETNAME
+            neutron router-interface-delete  $ROUTERNAME $SUBNETNAME 
         openstack router unset  --external-gateway $ROUTERNAME
         done
     done
@@ -81,6 +134,8 @@ clean_sg(){
     sgid=$(openstack security group list  --project $PROJECTID| grep "Default security group" | cut -d"|" -f2|sed -e "s/\ //g")
     sgruleid=$(openstack security group  rule list --protocol icmp --ingress | grep $sgid | cut -d"|" -f2|sed -e "s/\ //g")
     test -z $sgruleid || openstack security group  rule  delete $sgruleid
+    sgruleid=$(openstack security group  rule list --protocol icmpv6 --ingress | grep $sgid | cut -d"|" -f2|sed -e "s/\ //g")
+    test -z $sgruleid || openstack security group  rule  delete $sgruleid
 }
 
 create_fip(){
@@ -96,7 +151,7 @@ clean_fip(){
 }
 
 show_fip(){
-    neutron floatingip-list  -c floating_ip_address -c port_id  -c description --project_id $PROJECTID |grep $FIPDESCRIPTION
+    neutron floatingip-list  -c floating_ip_address -c port_id  -c description --project_id $PROJECTID |grep $FIPDESCRIPTION 
 }
 
 
@@ -120,10 +175,14 @@ associate_fip_to_port(){
 }
 
 create_vm(){
+   if [ "$1" == "v4" ];then
+       name="$NETNAME"
+   else
+       name="$V6NETNAME"
+   fi
    #source  ./hxnrc
    SGID=$(openstack security group  list --project $PROJECTID | grep default | cut -d"|" -f2 |sed -e 's/\ //g')
-   #NETID=$(openstack network show $NETNAME -c id | grep -w id | cut -d"|" -f3|sed -e "s/\ //g"| sed -e 's/\ //g')
-   for net in `openstack network list --project $PROJECTID | grep $NETNAME | cut -d"|" -f2|sed -e 's/\ //g'`
+   for net in `openstack network list --project $PROJECTID | grep $name | cut -d"|" -f2|sed -e 's/\ //g'`
    do
    id=$(nova boot --flavor $FLAVORID   --image $IMAGEID --nic net-id=$net --min-count $VMMINCOUNT  --security-group  $SGID --meta admin_pass='Y788^%#23YYYu' --availability-zone $NOVAZONE $VMNAME | grep -wi -e id | sed -e 's/\ //g'|cut -d"|" -f3)
    echo "openstack server show ${id}"
@@ -162,28 +221,39 @@ fi
 
 function help() {
     set +x
-    echo -e "$0 all         \t create network and vm"
+    echo -e "$0 all         \t create network v4 && v6 and vm in v4 && v6"
     echo -e "$0 all_fip     \t create network, vm and fip"
     echo -e "$0 clean       \t delete network, vm"
     echo -e "$0 clean_fip   \t delete network, vm and fip"
-    echo -e "$0 net         \t only create network"
-    echo -e "$0 vm          \t only create vm"
+    echo -e "$0 netv4       \t only create ipv4 network" 
+    echo -e "$0 netv6       \t only create ipv6 network" 
+    echo -e "$0 vmv4        \t only create vm in ipv4 network" 
+    echo -e "$0 vmv6        \t only create vm in ipv6 network" 
+    echo -e "$0 clean_vm    \t only clean vm" 
 }
 if [ "$1" == "all" ];then
     create_network
-    create_vm
+    create_networkv6
+    create_vm "v4"
+    create_vm "v6"
 elif [ "$1" == "all_fip" ];then
     create
 elif [ "$1" == "clean" ];then
    clean_vm
    clean_network
    clean_sg
+elif [ "$1" == "clean_vm" ];then
+   clean_vm
 elif [ "$1" == "clean_fip" ];then
     clean
-elif [ "$1" == "net" ];then
+elif [ "$1" == "netv4" ];then
     create_network
-elif [ "$1" == "vm" ];then
-    create_vm
+elif [ "$1" == "netv6" ];then
+    create_networkv6
+elif [ "$1" == "vmv4" ];then
+    create_vm "v4"
+elif [ "$1" == "vmv6" ];then
+    create_vm "v6"
 else
     help
 fi

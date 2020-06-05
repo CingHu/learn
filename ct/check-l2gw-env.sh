@@ -4,7 +4,7 @@
 #VLANNIC="ens6f1"
 #VLANNIC="bond1"
 #VXLANNIC="eno1"
-#NEIGHBOR="10.114.197.254"
+#NEIGHBORS="10.114.197.254"
 #COMPUTEHOSTS="10.114.196.150,10.114.196.151,10.114.196.234"
 
 # 先定义一些颜色:
@@ -37,13 +37,13 @@ OK="${GREEN}OK${NC}"
 
 help_info(){
  echo "Usage:"
- echo -e "\tsh $0 -vip 10.114.209.2 -vlanic ens6f1 -vxlanic eno1 -neighbor 10.114.197.254  -computehosts 10.114.196.150,10.114.196.151,10.114.196.234"
+ echo -e "\tsh $0 -vip 10.114.209.2 -vlanic ens6f1 -vxlanic eno1 -neighbor 10.114.197.254,10.114.197.253  -computehosts 10.114.196.150,10.114.196.151,10.114.196.234"
  echo ""
  echo -e "\tvip              ospf distribute vip"
  echo -e "\tvlanic           vlan nic name"
  echo -e "\tvxlanic          vxlan nic name"
- echo -e "\tneighbor         switch neighbor ip address"
- echo -e "\tcomputehosts     the ip address of compute nodes, split ",""
+ echo -e "\tneighbors        switch neighbor ip address, split\",\""
+ echo -e "\tcomputehosts     the ip address of compute nodes, split \",\""
  echo ""
  exit 1
 }
@@ -60,7 +60,7 @@ do
             shift
             ;;
         -neighbor)
-            NEIGHBOR=$2
+            NEIGHBORS=$2
             shift
             ;;
         -vxlanic)
@@ -145,11 +145,14 @@ function check_quagga(){
     check_service zebra.service
 
     local ret=${OK}
-    r=$(vtysh -d ospfd -c "show ip ospf neighbor" |  grep -i "full" | grep ${NEIGHBOR})
-    if [ "${r}" = "" ];then
-        log_error "the ospf neighbor of switch do not estableshed" && ret=${ERROR}
-    fi
-    log "check the neighbor ${NEIGHBOR} of switch: ${ret}"
+    for neigh in `echo ${NEIGHBORS}|sed -e 's/,/\ /g'`
+    do
+        r=$(vtysh -d ospfd -c "show ip ospf neighbor" |  grep -i "full" | grep ${neigh})
+        if [ "${r}" = "" ];then
+            log_error "the ospf neighbor $neigh of switch do not estableshed" && ret=${ERROR}
+        fi
+        log "check the neighbor ${neigh} of switch: ${ret}"
+    done
 
     local ret=${OK}
     r=$(vtysh -d ospfd -c "show ip ospf route" |  grep ${VIP})
@@ -158,7 +161,7 @@ function check_quagga(){
     fi
 
     local ret=${OK}
-    r=$(vtysh -d zebra -c 'show ip route ospf' |  grep ${VIP})
+    r=$(vtysh -d zebra -c 'show ip route ospf' |  grep ${VIP}|grep "directly connected")
     if [ "${r}" = "" ];then
         log_error "vip $VIP not is distributed by ospf" && ret=${ERROR}
     fi
@@ -363,6 +366,21 @@ function check_vtep(){
     fi
     log "check the limits of $file: ${ret}"
 
+    local ret=${OK}
+    r=$(sudo vtep-ctl list-ls | grep locator_ls)
+    if [ "${r}" = "" ];then
+        log_error "the logical switch locator_ls is not exist in vtep db" && ret=${ERROR}
+    fi
+    log "check the logical switch locator_ls at vtep db: ${ret}"
+
+    local ret=${OK}
+    r=$(sudo vtep-ctl  list-local-macs  locator_ls | grep "invalid_mac" | wc -l)
+    if [ $r -lt 1 ];then
+        log_error "the local macs of invalid_mac not exist in locator_ls logical switch" && ret=${ERROR}
+    fi
+    log "check the invalid mac in logical switch locator_ls: ${ret}"
+
+
     check_service vtep.service
 }
 
@@ -412,7 +430,7 @@ function check_l2gw_agent(){
 
 function check_vtep_monitor(){
     local ret=${OK}
-    r=$(sudo crontab -l | grep -e ${VIP}|grep   -e ${VLANNIC}|grep -e ${NEIGHBOR})
+    r=$(sudo crontab -l | grep -e ${VIP}|grep   -e ${VLANNIC}|grep -e ${NEIGHBORS})
     if [ "${r}" = "" ];then
         log_error "vtep monitor configurage error" && ret=${ERROR}
     fi
@@ -422,7 +440,7 @@ function check_vtep_monitor(){
 }
 
 function check_input(){
-    if [ "${VIP}" == "" -o  "${VLANNIC}" == "" -o "${VXLANNIC}" == "" -o  "${NEIGHBOR}" == "" ];then
+    if [ "${VIP}" == "" -o  "${VLANNIC}" == "" -o "${VXLANNIC}" == "" -o  "${NEIGHBORS}" == "" ];then
         help_info
     fi
 }
@@ -446,5 +464,4 @@ function main(){
 }
 
 main
-
 
