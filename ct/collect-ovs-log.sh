@@ -18,8 +18,8 @@ function run_cmd(){
 }
 for bridge in  `ovs-vsctl list bridge | grep name | cut -d":" -f2`
 do
-    run_cmd ovs-ofctl dump-flows ${bridge}
-    run_cmd ovs-ofctl dump-ports ${bridge}
+    run_cmd ovs-ofctl dump-flows ${bridge} -O openflow13
+    run_cmd ovs-ofctl dump-ports ${bridge} -O openflow13
 done
 run_cmd ovs-vsctl show
 run_cmd ovs-appctl dpctl/dump-flows

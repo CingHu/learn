@@ -87,6 +87,20 @@ ARGS_NUM=$#
 ARGS_ARRAY=$@
 IS_IPV6=false
 
+
+function check_packet(){
+   local cmd=`$1 -h 2>&1|grep "command not found"`
+   if [ "${cmd}" != "" ];then
+       yum install $1 -y
+   fi
+   local cmd=`$1 -h 2>&1|grep "command not found"`
+   if [ "${cmd}" != "" ];then
+       echo "Error: $1 command not found"
+       exit 1
+   fi
+
+}
+
 function handle_params() {
     ARGS=${ARGS}" "
     local j=0
@@ -481,6 +495,8 @@ function main() {
         help
         exit
     fi
+    check_packet tcpdump
+    check_packet bc
     handle_params
     generate_ipv6_complete_file
     ARGS="tcpdump -ennvv ${ARGS}"
