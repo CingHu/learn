@@ -42,4 +42,6 @@ run_cmd dmesg -T
 run_cmd  cp /var/log/openvswitch/ovsdb-server.log ovslog/ovsdb-server.log-$date.log
 run_cmd  cp /var/log/messages   ovslog/messages-$date.log
 
+ovs-bugtool -y -s --output=tar.gz --outfile=/tmp/bugtool-report.tgz 
+
 
