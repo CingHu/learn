@@ -20,20 +20,23 @@ function help() {
     echo "it\`s a tool used to filter the overlay packets of vxlan based on tcpdump, "
     echo "on the other side, it can be used as a origin tcpdump tool"
     echo "Usage: tcpdump [-aAbdDefhHIJKlLnNOpqRStuUvxX] [ -B size ] [ -c count ]"
-	echo "	[ -C file_size ] [ -E algo:secret ] [ -F file ] [ -G seconds ]"
-	echo "	[ -i interface ] [ -j tstamptype ] [ -M secret ]"
-	echo "	[ -P in|out|inout ]"
-	echo "	[ -r file ] [ -s snaplen ] [ -T type ] [ -V file ] [ -w file ]"
-	echo "	[ -W filecount ] [ -y datalinktype ] [ -z command ]"
-	echo "	[ -Z user ] [ expression ]"
+    echo "  [ -C file_size ] [ -E algo:secret ] [ -F file ] [ -G seconds ]"
+    echo "  [ -i interface ] [ -j tstamptype ] [ -M secret ]"
+    echo "  [ -P in|out|inout ]"
+    echo "  [ -r file ] [ -s snaplen ] [ -T type ] [ -V file ] [ -w file ]"
+    echo "  [ -W filecount ] [ -y datalinktype ] [ -z command ]"
+    echo "  [ -Z user ] [ expression ]"
     echo ""
     echo "Expression:"
     echo "vxlan.smac  MAC              src mac of the overlay packet, ipv4 and ipv6"
     echo "vxlan.dmac  MAC              dst mac of the overlay packet, ipv4 and ipv6"
-    echo "vxlan.sip   IP               src or ip of the overlay packet, ipv4 and ipv6"
-    echo "vxlan.dip   IP               dst or ip of the overlay packet, ipv4 and ipv6"
+    echo "vxlan.mac  MAC               mac of the overlay packet, ipv4 and ipv6"
+    echo "vxlan.sip   IP               src ip of the overlay packet, ipv4 and ipv6"
+    echo "vxlan.dip   IP               dst ip of the overlay packet, ipv4 and ipv6"
+    echo "vxlan.ip     IP              host ip of the overlay packet, ipv4 and ipv6"
     echo "vxlan.sport  PORT            src port of the overlay packet, ipv4 and ipv6"
     echo "vxlan.dport  PORT            dst port of the overlay packet, ipv4 and ipv6"
+    echo "vxlan.port  PORT             port of the overlay packet, ipv4 and ipv6"
     echo "vxlan.ping.request           ping request of the overlay packet, ipv4 and ipv6"
     echo "vxlan.ping.reply             ping reply of the overlay packet, ipv4 and ipv6"
     echo "vxlan.ping                   ping of the overlay packet, ipv4 and ipv6"
@@ -59,6 +62,8 @@ function help() {
     echo " ipv4 example: ./$0 -i bond1 vxlan.arp"
     echo " ipv4 example: ./$0 -i bond1 vxlan.arp.request"
     echo " ipv4 example: ./$0 -i bond1 vxlan.sip 192.168.10.1"
+    echo " ipv4 example: ./$0 -i bond1 vxlan.ip 192.168.10.10"
+    echo " ipv4 example: ./$0 -i bond1 vxlan.mac fa:16:3e:a3:22:f1"
     echo " ipv4 example: ./$0 -i bond1 vxlan.smac fa:16:3e:2d:1a:f3"
     echo " ipv4 example: ./$0 -i bond1 vxlan and vxlan.vni 100"
     echo " ipv4 example: ./$0 -i bond1 vxlan and vxlan.vni 100 and vxlan.ping"
@@ -115,10 +120,13 @@ function handle_params() {
            [[ ${ARGS_ARRAY[$j]} == "vxlan.icmp" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.smac" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.dmac" ]] ||\
+           [[ ${ARGS_ARRAY[$j]} == "vxlan.mac" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.sip" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.dip" ]]  ||\
+           [[ ${ARGS_ARRAY[$j]} == "vxlan.ip" ]]  ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.sport" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.dport" ]] ||\
+           [[ ${ARGS_ARRAY[$j]} == "vxlan.port" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.vni" ]]||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.ping.request" ]] ||\
            [[ ${ARGS_ARRAY[$j]} == "vxlan.ping.reply" ]] ||\
@@ -180,7 +188,7 @@ function replace_arp() {
 function replace_smac() {
     local mac=$1
     if [ $mac ]; then
-	    local formatmac=$(echo $mac|awk -F":" '{print $3$4$5$6}')
+        local formatmac=$(echo $mac|awk -F":" '{print $3$4$5$6}')
         local np=" udp[24:4] = 0x"${formatmac}
         ARGS=${ARGS/vxlan.smac[[:space:]]${mac}/$np}
     fi
@@ -189,10 +197,17 @@ function replace_smac() {
 function replace_dmac() {
     local mac=$1
     if [ $mac ]; then
-	    local formatmac=$(echo $mac|awk -F":" '{print $3$4$5$6}')
+        local formatmac=$(echo $mac|awk -F":" '{print $3$4$5$6}')
         local np=" udp[18:4] = 0x"${formatmac}
         ARGS=${ARGS/vxlan.dmac[[:space:]]$mac/$np}
     fi
+}
+
+function replace_mac() {
+    local mac=$1
+    ARGS=${ARGS/vxlan.mac[[:space:]]$mac/vxlan.smac $mac or vxlan.dmac $mac}
+    replace_smac $mac
+    replace_dmac $mac
 }
 
 
@@ -250,6 +265,13 @@ function replace_dip() {
         fi
     fi
     return
+}
+
+function replace_host() {
+    local host=$1
+    ARGS=${ARGS/vxlan.ip[[:space:]]$host/vxlan.sip $host or vxlan.dip $host}
+    replace_dip $host
+    replace_sip $host
 }
 
 
@@ -321,6 +343,13 @@ function replace_dport() {
     fi
 }
 
+function replace_port() {
+    local port=$1
+    ARGS=${ARGS/vxlan.port[[:space:]]$port/vxlan.dport $port or vxlan.sport $port}
+    replace_dport $port
+    replace_sport $port
+}
+
 function replace_ping() {
     local ping=$1
     if [ $ping ]; then
@@ -366,6 +395,7 @@ function replace_icmp6_type() {
     ARGS=${ARGS/vxlan.icmp6.type[[:space:]]${v6type}/$np}
 }
 
+
 function resolve_one() {
     if [ $1 ]; then
         local param=$1
@@ -374,15 +404,21 @@ function resolve_one() {
         if [ $param = "vxlan.smac" ] && [ $value ]; then
             replace_smac $value
         elif [ $param = "vxlan.dmac" ] && [ $value ]; then
-            replace_dmac $value			
+            replace_dmac $value         
+        elif [ $param = "vxlan.mac" ] && [ $value ]; then
+            replace_mac $value          
         elif [ $param = "vxlan.sip" ] && [ $value ]; then
             replace_sip $value
         elif [ $param = "vxlan.dip" ] && [ $value ]; then
             replace_dip $value
+        elif [ $param = "vxlan.ip" ] && [ $value ]; then
+            replace_host $value
         elif [ $param = "vxlan.sport" ] && [ $value ]; then
             replace_sport $value
         elif [ $param = "vxlan.dport" ] && [ $value ]; then
-            replace_dport $value	
+            replace_dport $value    
+        elif [ $param = "vxlan.port" ] && [ $value ]; then
+            replace_port $value 
         elif [[ $param == "vxlan.ping.request" ]] || \
              [[ $param = "vxlan.ping" ]] ||\
              [[ $param == "vxlan.ping.reply" ]]; then
@@ -505,5 +541,4 @@ function main() {
 }
 
 main $*
-
 
